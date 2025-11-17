@@ -243,3 +243,45 @@ export function addTrackFiles(trackId: string, filePaths: string[]): void {
     db.close();
   }
 }
+
+/**
+ * Get all tracks from the database.
+ *
+ * @returns Array of all tracks
+ */
+export function getAllTracks(): Track[] {
+  const db = getDatabase();
+
+  try {
+    const stmt = db.prepare('SELECT * FROM tracks');
+    return stmt.all() as Track[];
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Get all track-file associations from the database.
+ *
+ * @returns Map of track IDs to arrays of file paths
+ */
+export function getAllTrackFiles(): Map<string, string[]> {
+  const db = getDatabase();
+
+  try {
+    const stmt = db.prepare('SELECT track_id, file_path FROM track_files');
+    const rows = stmt.all() as Array<{ track_id: string; file_path: string }>;
+
+    // Group file paths by track_id
+    const fileMap = new Map<string, string[]>();
+    for (const row of rows) {
+      const existing = fileMap.get(row.track_id) || [];
+      existing.push(row.file_path);
+      fileMap.set(row.track_id, existing);
+    }
+
+    return fileMap;
+  } finally {
+    db.close();
+  }
+}

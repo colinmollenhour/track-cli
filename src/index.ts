@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
 import { newCommand } from './commands/new.js';
 import { continueCommand } from './commands/continue.js';
+import { statusCommand } from './commands/status.js';
 
 const program = new Command();
 
@@ -80,8 +81,7 @@ program
   .description('Display the current state of the project and all tracks')
   .option('--json', 'Output as JSON')
   .action((options: { json?: boolean }) => {
-    console.log('track status - not yet implemented');
-    console.log('json:', options.json);
+    statusCommand(options);
   });
 
 program.parse();
