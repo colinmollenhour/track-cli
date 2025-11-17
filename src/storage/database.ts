@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { mkdirSync } from 'fs';
 import { getDatabasePath, getTrackDir } from '../utils/paths.js';
-import type { CreateTrackParams, Track } from '../models/types.js';
+import type { CreateTrackParams, Track, UpdateTrackParams } from '../models/types.js';
 
 /**
  * Schema for the tracks table.
@@ -161,6 +161,34 @@ export function getTrack(trackId: string): Track | undefined {
   try {
     const stmt = db.prepare('SELECT * FROM tracks WHERE id = ?');
     return stmt.get(trackId) as Track | undefined;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Update an existing track's mutable fields.
+ *
+ * @param trackId - Track ID to update
+ * @param params - Track update parameters
+ */
+export function updateTrack(trackId: string, params: UpdateTrackParams): void {
+  const db = getDatabase();
+
+  try {
+    const stmt = db.prepare(`
+      UPDATE tracks
+      SET summary = @summary,
+          next_prompt = @next_prompt,
+          status = @status,
+          updated_at = @updated_at
+      WHERE id = @id
+    `);
+
+    stmt.run({
+      id: trackId,
+      ...params,
+    });
   } finally {
     db.close();
   }

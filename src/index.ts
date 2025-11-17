@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
 import { newCommand } from './commands/new.js';
+import { continueCommand } from './commands/continue.js';
 
 const program = new Command();
 
@@ -69,9 +70,7 @@ program
       trackId: string,
       options: { summary: string; next: string; status: string; file?: string[] }
     ) => {
-      console.log('track continue - not yet implemented');
-      console.log('trackId:', trackId);
-      console.log('options:', options);
+      continueCommand(trackId, options);
     }
   );
 
