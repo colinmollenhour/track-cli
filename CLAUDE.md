@@ -38,3 +38,13 @@ When working on this codebase, adhere to these core principles:
 - Opaque storage (SQLite) enforces CLI usage
 
 ***REMOVED***
+
+## Quick Reference
+
+**Build & Run:**
+```bash
+npm run build                    # Compile TypeScript → dist/
+node ./dist/index.js <command>   # Run the CLI
+```
+
+**Always build before testing CLI changes!**

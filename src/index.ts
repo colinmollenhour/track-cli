@@ -2,6 +2,7 @@
 
 import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
+import { newCommand } from './commands/new.js';
 
 const program = new Command();
 
@@ -32,9 +33,7 @@ program
     return [...previous, value];
   })
   .action((title: string, options: { parent?: string; summary: string; next: string; file?: string[] }) => {
-    console.log('track new - not yet implemented');
-    console.log('title:', title);
-    console.log('options:', options);
+    newCommand(title, options);
   });
 
 // track continue <track-id> --summary "..." --next "..." [--status <status>] [--file <file-path>]...

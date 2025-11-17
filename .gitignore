@@ -35,4 +35,4 @@ yarn-error.log*
 
 # Optional: Track CLI databases (for testing)
 # Uncomment to exclude track databases from git:
-# .track/
+.track/

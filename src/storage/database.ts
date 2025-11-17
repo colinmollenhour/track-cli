@@ -165,3 +165,53 @@ export function getTrack(trackId: string): Track | undefined {
     db.close();
   }
 }
+
+/**
+ * Get the root track (project track).
+ * The root track has parent_id = NULL.
+ *
+ * @returns Root track if found, undefined otherwise
+ */
+export function getRootTrack(): Track | undefined {
+  const db = getDatabase();
+
+  try {
+    const stmt = db.prepare('SELECT * FROM tracks WHERE parent_id IS NULL LIMIT 1');
+    return stmt.get() as Track | undefined;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Add file associations to a track.
+ * Idempotent - duplicates are ignored via PRIMARY KEY constraint.
+ *
+ * @param trackId - Track ID to associate files with
+ * @param filePaths - Array of file paths to associate
+ */
+export function addTrackFiles(trackId: string, filePaths: string[]): void {
+  if (filePaths.length === 0) {
+    return;
+  }
+
+  const db = getDatabase();
+
+  try {
+    // Use a transaction for atomicity and performance
+    const insertFile = db.prepare(`
+      INSERT OR IGNORE INTO track_files (track_id, file_path)
+      VALUES (?, ?)
+    `);
+
+    const insertMany = db.transaction((files: string[]) => {
+      for (const filePath of files) {
+        insertFile.run(trackId, filePath);
+      }
+    });
+
+    insertMany(filePaths);
+  } finally {
+    db.close();
+  }
+}
