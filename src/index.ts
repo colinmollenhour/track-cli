@@ -29,12 +29,21 @@ program
   .option('--parent <track-id>', 'Parent track ID')
   .option('--summary <summary>', 'Current state description', '')
   .option('--next <next-prompt>', 'What to do next', '')
-  .option('--file <file-path>', 'Associated file path (can be specified multiple times)', (value, previous: string[] = []) => {
-    return [...previous, value];
-  })
-  .action((title: string, options: { parent?: string; summary: string; next: string; file?: string[] }) => {
-    newCommand(title, options);
-  });
+  .option(
+    '--file <file-path>',
+    'Associated file path (can be specified multiple times)',
+    (value, previous: string[] = []) => {
+      return [...previous, value];
+    }
+  )
+  .action(
+    (
+      title: string,
+      options: { parent?: string; summary: string; next: string; file?: string[] }
+    ) => {
+      newCommand(title, options);
+    }
+  );
 
 // track continue <track-id> --summary "..." --next "..." [--status <status>] [--file <file-path>]...
 program
@@ -43,15 +52,28 @@ program
   .argument('<track-id>', 'Track ID to update')
   .requiredOption('--summary <summary>', 'Updated state description')
   .requiredOption('--next <next-prompt>', 'What to do next')
-  .option('--status <status>', 'Track status (planned|in_progress|done|blocked|superseded)', 'in_progress')
-  .option('--file <file-path>', 'Associated file path (can be specified multiple times)', (value, previous: string[] = []) => {
-    return [...previous, value];
-  })
-  .action((trackId: string, options: { summary: string; next: string; status: string; file?: string[] }) => {
-    console.log('track continue - not yet implemented');
-    console.log('trackId:', trackId);
-    console.log('options:', options);
-  });
+  .option(
+    '--status <status>',
+    'Track status (planned|in_progress|done|blocked|superseded)',
+    'in_progress'
+  )
+  .option(
+    '--file <file-path>',
+    'Associated file path (can be specified multiple times)',
+    (value, previous: string[] = []) => {
+      return [...previous, value];
+    }
+  )
+  .action(
+    (
+      trackId: string,
+      options: { summary: string; next: string; status: string; file?: string[] }
+    ) => {
+      console.log('track continue - not yet implemented');
+      console.log('trackId:', trackId);
+      console.log('options:', options);
+    }
+  );
 
 // track status [--json]
 program
