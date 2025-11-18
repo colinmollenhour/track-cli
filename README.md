@@ -169,32 +169,90 @@ File associations are **idempotent**—adding the same file twice won't create d
 
 ## AI Agent Usage
 
-Track CLI is designed for AI agents working across sessions:
+Track CLI is optimized for AI agents and LLMs working across sessions. Multiple integration methods available:
+
+### 1. AGENTS.md Template
+
+Copy `docs/AGENTS.md` to your project root for any AI agent to use:
+
+```bash
+# Copy to your project
+cp track-cli/docs/AGENTS.md your-project/AGENTS.md
+
+# AI agents automatically discover and use this file
+```
+
+**Includes:**
+- Essential 3-step workflow (session start/during/end)
+- Command quick reference
+- JSON output structure
+- The Breadcrumb Pattern for detailed next steps
+- Multi-agent coordination
+
+### 2. Claude Code Skill
+
+For Claude Code users, install the personal skill for automatic, proactive usage:
+
+```bash
+# Copy skill files
+mkdir -p ~/.claude/skills/track-cli
+cp -r track-cli/docs/claude-skills/* ~/.claude/skills/track-cli/
+
+# Claude automatically:
+# - Checks status at session start
+# - Creates tracks for new work
+# - Updates progress during session
+# - Saves comprehensive state at session end
+```
+
+See [docs/claude-code-setup.md](docs/claude-code-setup.md) for complete setup guide.
+
+### 3. Function Calling / Tool Use
+
+For LLM tool calling (OpenAI, Anthropic, etc.):
+
+```json
+// Tool definitions in docs/tools.json
+{
+  "name": "track_status",
+  "description": "Get current project state...",
+  "input_schema": { "type": "object", "properties": {...} }
+}
+```
+
+**Resources:**
+- `docs/schema.json` - JSON schema for `track status --json` output
+- `docs/tools.json` - Function calling definitions for all commands
+
+### Basic Session Pattern
 
 ```bash
 # At session start - resume context
 track status --json | jq '.tracks[] | select(.status == "in_progress")'
 
-# Read the summary and next_prompt fields
-# Do work...
+# During work - create and update
+track new "Feature" --summary "Description" --next "First step"
+track continue <id> --summary "Progress made" --next "Next specific step"
 
-# Before session end - update state
-track continue <track-id> \
-  --summary "What was accomplished this session" \
-  --next "What to do in the next session" \
-  --status in_progress
+# At session end - save state
+track continue <id> \
+  --summary "COMPLETE summary of what exists, what works, what's left" \
+  --next "SPECIFIC next step with file paths and context"
 ```
 
-**Key Principle:** Since there's no history tracking, summaries must be comprehensive. Each update should capture the current state completely.
+**Key Principle:** No history tracking means summaries must be comprehensive. Use the **Breadcrumb Pattern** for detailed, actionable next steps.
 
-See [docs/ai-agents.md](docs/ai-agents.md) for detailed integration patterns.
+**Documentation:**
+- [AGENTS.md](docs/AGENTS.md) - Concise AI agent guide (copy to your project)
+- [Claude Code Setup](docs/claude-code-setup.md) - Personal skill installation
+- [AI Agent Examples](examples/ai-agent-usage.md) - Complete workflow examples
 
 ## Documentation
 
 - [Installation Guide](docs/installation.md) - Detailed setup instructions
 - [Usage Guide](docs/usage.md) - Comprehensive tutorials and workflows
 - [Command Reference](docs/commands.md) - Quick lookup for all commands
-- [AI Agent Integration](docs/ai-agents.md) - Patterns for AI agent usage
+- [AI Agent Integration](docs/AGENTS.md) - Patterns for AI agent usage
 - [Examples](examples/) - Real-world workflow examples
 ***REMOVED***
 

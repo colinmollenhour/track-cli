@@ -1,0 +1,414 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/lackeyjb/track-cli/tools/v1",
+  "title": "Track CLI Tool Definitions",
+  "description": "Function calling schemas for track CLI commands. Compatible with OpenAI, Anthropic, and MCP tool calling formats.",
+  "tools": [
+    {
+      "name": "track_init",
+      "description": "Initialize a new track project in the current directory. Creates .track/ database with root track. Only needed once per project. Use when starting tracking for a new codebase or when no .track/ directory exists yet.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Project name (optional). If omitted, uses current directory name. Can contain spaces."
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Overwrite existing .track/ database (optional, defaults to false). WARNING: Destroys all existing tracks. Only use when starting completely fresh.",
+            "default": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether initialization succeeded"
+          },
+          "project_id": {
+            "type": "string",
+            "description": "8-character ID of the created root project track",
+            "pattern": "^[A-Za-z0-9_-]{8}$"
+          },
+          "project_name": {
+            "type": "string",
+            "description": "Name of the initialized project"
+          },
+          "database_path": {
+            "type": "string",
+            "description": "Absolute path to the created .track/track.db file"
+          }
+        }
+      },
+      "examples": [
+        {
+          "description": "Initialize with custom name",
+          "input": {
+            "name": "My Web App"
+          },
+          "command": "track init \"My Web App\""
+        },
+        {
+          "description": "Initialize using directory name",
+          "input": {},
+          "command": "track init"
+        },
+        {
+          "description": "Force overwrite existing project",
+          "input": {
+            "name": "My Web App",
+            "force": true
+          },
+          "command": "track init \"My Web App\" --force"
+        }
+      ]
+    },
+    {
+      "name": "track_new",
+      "description": "Create a new track (feature or task) in the project hierarchy. Use to organize work into features and break features into tasks. Creates tracks with 'planned' status by default. Always use this when starting new work, creating sub-tasks, or organizing project structure.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Track title (required). Clear, concise description of the work. Must be quoted if it contains spaces.",
+            "minLength": 1
+          },
+          "parent_id": {
+            "type": "string",
+            "description": "Parent track ID (optional). If omitted, defaults to root project track. Must be a valid 8-character track ID from 'track status --json'. Creates parent-child relationship for hierarchy.",
+            "pattern": "^[A-Za-z0-9_-]{8}$"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Current state summary (optional, defaults to empty string). What's been planned, decided, or considered so far. Should be comprehensive since there is no history in v1.",
+            "default": ""
+          },
+          "next_prompt": {
+            "type": "string",
+            "description": "Next steps (optional, defaults to empty string). What to do first on this track. Should be specific and actionable.",
+            "default": ""
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "File paths to associate with this track (optional). Can be relative or absolute. No validation that files exist. Use to track which files are relevant to this work.",
+            "default": []
+          }
+        },
+        "required": ["title"],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether track creation succeeded"
+          },
+          "track_id": {
+            "type": "string",
+            "description": "8-character ID of the newly created track",
+            "pattern": "^[A-Za-z0-9_-]{8}$"
+          },
+          "parent_id": {
+            "type": "string",
+            "description": "Parent track ID (either provided or root)",
+            "pattern": "^[A-Za-z0-9_-]{8}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["planned"],
+            "description": "Status of new track (always 'planned')"
+          },
+          "files_count": {
+            "type": "integer",
+            "description": "Number of files associated"
+          }
+        }
+      },
+      "examples": [
+        {
+          "description": "Minimal track (defaults to root parent)",
+          "input": {
+            "title": "User Authentication"
+          },
+          "command": "track new \"User Authentication\""
+        },
+        {
+          "description": "Create task under feature",
+          "input": {
+            "title": "Login Form",
+            "parent_id": "abc12345"
+          },
+          "command": "track new \"Login Form\" --parent abc12345"
+        },
+        {
+          "description": "Complete track with all details",
+          "input": {
+            "title": "API Integration",
+            "parent_id": "def67890",
+            "summary": "Need to integrate with payment provider",
+            "next_prompt": "Review API documentation and get credentials",
+            "files": ["src/api/payment.ts", "src/types/payment.ts"]
+          },
+          "command": "track new \"API Integration\" --parent def67890 --summary \"Need to integrate with payment provider\" --next \"Review API documentation and get credentials\" --file src/api/payment.ts --file src/types/payment.ts"
+        }
+      ]
+    },
+    {
+      "name": "track_continue",
+      "description": "Update an existing track's state. Use to save progress, update summaries, change status, or add file associations. Call this regularly during work sessions to maintain current state, and always call at session end to preserve context for resuming later. Status defaults to 'in_progress' if not specified.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "track_id": {
+            "type": "string",
+            "description": "Track ID to update (required). Must be a valid 8-character track ID from 'track status --json'.",
+            "pattern": "^[A-Za-z0-9_-]{8}$"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Comprehensive summary of current state (optional). What's been accomplished, key decisions made, current blockers. Replaces previous summary entirely. Should be detailed since there is no history to reference."
+          },
+          "next_prompt": {
+            "type": "string",
+            "description": "Clear next step for resuming work (optional). Should be specific and actionable. Replaces previous next_prompt entirely."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["planned", "in_progress", "done", "blocked", "superseded"],
+            "description": "Updated lifecycle status (optional, defaults to 'in_progress' if not provided). planned: not started. in_progress: actively working. done: completed. blocked: waiting on dependency. superseded: abandoned/replaced.",
+            "default": "in_progress"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Additional file paths to associate (optional). Appends to existing associations (cannot remove in v1). Idempotent - adding same file twice won't create duplicates.",
+            "default": []
+          }
+        },
+        "required": ["track_id"],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether update succeeded"
+          },
+          "track_id": {
+            "type": "string",
+            "description": "Updated track ID",
+            "pattern": "^[A-Za-z0-9_-]{8}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["planned", "in_progress", "done", "blocked", "superseded"],
+            "description": "Current status after update"
+          },
+          "files_count": {
+            "type": "integer",
+            "description": "Total number of files associated after update"
+          }
+        }
+      },
+      "examples": [
+        {
+          "description": "Update status only",
+          "input": {
+            "track_id": "abc12345",
+            "status": "in_progress"
+          },
+          "command": "track continue abc12345 --status in_progress"
+        },
+        {
+          "description": "Save progress with summary and next steps",
+          "input": {
+            "track_id": "abc12345",
+            "summary": "Login form component created with email/password fields and validation. API integration in progress.",
+            "next_prompt": "Wire up authentication API call and handle error cases. Then add loading states."
+          },
+          "command": "track continue abc12345 --summary \"Login form component created with email/password fields and validation. API integration in progress.\" --next \"Wire up authentication API call and handle error cases. Then add loading states.\""
+        },
+        {
+          "description": "Mark as done",
+          "input": {
+            "track_id": "abc12345",
+            "summary": "Feature complete and tested. All acceptance criteria met. PR #42 merged to main.",
+            "next_prompt": "None - moving to next feature",
+            "status": "done"
+          },
+          "command": "track continue abc12345 --summary \"Feature complete and tested. All acceptance criteria met. PR #42 merged to main.\" --next \"None - moving to next feature\" --status done"
+        },
+        {
+          "description": "Mark as blocked with context",
+          "input": {
+            "track_id": "abc12345",
+            "summary": "Implementation blocked - waiting for API credentials from ops team. Design and component structure ready.",
+            "next_prompt": "Once credentials received, configure Stripe SDK and test connection",
+            "status": "blocked",
+            "files": ["src/config/stripe.ts"]
+          },
+          "command": "track continue abc12345 --summary \"Implementation blocked - waiting for API credentials from ops team. Design and component structure ready.\" --next \"Once credentials received, configure Stripe SDK and test connection\" --status blocked --file src/config/stripe.ts"
+        }
+      ]
+    },
+    {
+      "name": "track_status",
+      "description": "Get current project state with all tracks, statuses, and relationships. Use at session start to resume context and understand what needs to be done. Use anytime to understand project structure, find work in progress, or check track details. Returns complete tree with derived track kinds (super/feature/task).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "json": {
+            "type": "boolean",
+            "description": "Output as JSON (optional, defaults to false for human-readable tree). Always use true for programmatic parsing.",
+            "default": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Human-readable tree output when json=false"
+          },
+          {
+            "type": "object",
+            "description": "Structured JSON output when json=true. See schema.json for complete specification.",
+            "properties": {
+              "tracks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "string"},
+                    "title": {"type": "string"},
+                    "parent_id": {"type": ["string", "null"]},
+                    "summary": {"type": "string"},
+                    "next_prompt": {"type": "string"},
+                    "status": {"type": "string"},
+                    "kind": {"type": "string"},
+                    "files": {"type": "array"},
+                    "children": {"type": "array"},
+                    "created_at": {"type": "string"},
+                    "updated_at": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "examples": [
+        {
+          "description": "Get human-readable tree",
+          "input": {
+            "json": false
+          },
+          "command": "track status"
+        },
+        {
+          "description": "Get JSON for programmatic parsing",
+          "input": {
+            "json": true
+          },
+          "command": "track status --json"
+        },
+        {
+          "description": "Find in-progress tracks",
+          "input": {
+            "json": true
+          },
+          "command": "track status --json | jq '.tracks[] | select(.status == \"in_progress\")'"
+        }
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "name": "session_start",
+      "description": "Resume work at start of session",
+      "steps": [
+        {
+          "tool": "track_status",
+          "params": {"json": true},
+          "purpose": "Get current project state and find work in progress"
+        },
+        {
+          "purpose": "Parse JSON to find tracks with status 'in_progress' or 'planned'"
+        },
+        {
+          "purpose": "Read summary and next_prompt from relevant tracks to understand context"
+        }
+      ]
+    },
+    {
+      "name": "create_feature_with_tasks",
+      "description": "Create feature and break down into tasks",
+      "steps": [
+        {
+          "tool": "track_new",
+          "params": {
+            "title": "Feature Name",
+            "summary": "Feature description",
+            "next_prompt": "First step"
+          },
+          "purpose": "Create feature track under root"
+        },
+        {
+          "purpose": "Note the returned track_id for use as parent"
+        },
+        {
+          "tool": "track_new",
+          "params": {
+            "title": "Task 1",
+            "parent_id": "<feature-id>",
+            "next_prompt": "Implementation details"
+          },
+          "purpose": "Create first task under feature"
+        },
+        {
+          "tool": "track_new",
+          "params": {
+            "title": "Task 2",
+            "parent_id": "<feature-id>",
+            "next_prompt": "Implementation details"
+          },
+          "purpose": "Create second task under feature"
+        }
+      ]
+    },
+    {
+      "name": "session_end",
+      "description": "Save progress at end of session",
+      "steps": [
+        {
+          "tool": "track_status",
+          "params": {"json": true},
+          "purpose": "Get current in-progress tracks"
+        },
+        {
+          "tool": "track_continue",
+          "params": {
+            "track_id": "<id>",
+            "summary": "Comprehensive summary of what was accomplished",
+            "next_prompt": "Clear next step for resuming",
+            "status": "in_progress"
+          },
+          "purpose": "Update each in-progress track with current state"
+        }
+      ]
+    }
+  ]
+}

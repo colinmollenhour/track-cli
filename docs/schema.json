@@ -1,0 +1,167 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/lackeyjb/track-cli/schema/v1",
+  "title": "Track CLI Status Output",
+  "description": "JSON schema for 'track status --json' command output. Describes the complete project state including all tracks, their relationships, statuses, and file associations.",
+  "type": "object",
+  "properties": {
+    "tracks": {
+      "type": "array",
+      "description": "Array of all tracks in the project, including the root project track",
+      "items": {
+        "type": "object",
+        "description": "A single track with all its details, derived fields, and associations",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique 8-character track identifier (nanoid). Use this ID for track continue and as --parent for track new.",
+            "pattern": "^[A-Za-z0-9_-]{8}$",
+            "examples": ["abc12345", "def67890", "xyz99999"]
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable track title or project name",
+            "minLength": 1,
+            "examples": ["User Authentication", "Login Form", "API Integration"]
+          },
+          "parent_id": {
+            "type": ["string", "null"],
+            "description": "Parent track ID. null for the root project track, otherwise the 8-character ID of the parent.",
+            "pattern": "^[A-Za-z0-9_-]{8}$",
+            "examples": ["abc12345", null]
+          },
+          "summary": {
+            "type": "string",
+            "description": "Current state description. What has been accomplished, decided, or discovered. Should be comprehensive since there is no history in v1.",
+            "examples": [
+              "Login form component created with email/password fields and validation",
+              "Implementation blocked - waiting for API credentials from ops team",
+              "Feature complete and tested. PR #42 merged to main."
+            ]
+          },
+          "next_prompt": {
+            "type": "string",
+            "description": "What to do next. Should be specific and actionable. Empty string if no next steps (e.g., when status is 'done').",
+            "examples": [
+              "Wire up authentication API call and handle errors",
+              "Once creds received, configure Stripe SDK and test connection",
+              "None - moving to next feature"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["planned", "in_progress", "done", "blocked", "superseded"],
+            "description": "Current lifecycle status of the track. planned: not started yet. in_progress: currently working on it. done: completed. blocked: waiting on something. superseded: replaced by different approach.",
+            "examples": ["planned", "in_progress", "done"]
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["super", "feature", "task"],
+            "description": "Derived track kind based on hierarchy position. super: root project or has grandchildren. feature: has children but no grandchildren. task: leaf node with no children. Not stored in database - computed on-the-fly.",
+            "examples": ["super", "feature", "task"]
+          },
+          "files": {
+            "type": "array",
+            "description": "Array of file paths associated with this track. Can be relative or absolute paths. No validation that files exist.",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              ["src/components/LoginForm.tsx", "src/hooks/useLogin.ts"],
+              ["src/api/auth.ts"],
+              []
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "Array of child track IDs. Empty array for leaf nodes (tasks). Use these IDs to traverse the tree structure.",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{8}$"
+            },
+            "examples": [
+              ["def67890", "ghi11111"],
+              []
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 UTC timestamp of when the track was created (track new or track init for root)",
+            "examples": ["2025-01-15T10:30:00.000Z"]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 UTC timestamp of when the track was last updated (track continue or initial creation)",
+            "examples": ["2025-01-15T14:45:30.000Z"]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "parent_id",
+          "summary",
+          "next_prompt",
+          "status",
+          "kind",
+          "files",
+          "children",
+          "created_at",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["tracks"],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "tracks": [
+        {
+          "id": "abc12345",
+          "title": "My Web App",
+          "parent_id": null,
+          "summary": "E-commerce web application",
+          "next_prompt": "Continue with dashboard features",
+          "status": "in_progress",
+          "kind": "super",
+          "files": [],
+          "children": ["def67890", "mno33333"],
+          "created_at": "2025-01-15T10:00:00.000Z",
+          "updated_at": "2025-01-15T10:00:00.000Z"
+        },
+        {
+          "id": "def67890",
+          "title": "User Authentication",
+          "parent_id": "abc12345",
+          "summary": "Login and logout complete, tested",
+          "next_prompt": "None - feature complete",
+          "status": "done",
+          "kind": "feature",
+          "files": [],
+          "children": ["ghi11111", "jkl22222"],
+          "created_at": "2025-01-15T10:05:00.000Z",
+          "updated_at": "2025-01-15T12:00:00.000Z"
+        },
+        {
+          "id": "ghi11111",
+          "title": "Login Form",
+          "parent_id": "def67890",
+          "summary": "Form component with validation",
+          "next_prompt": "",
+          "status": "done",
+          "kind": "task",
+          "files": [
+            "src/components/LoginForm.tsx",
+            "src/hooks/useLogin.ts"
+          ],
+          "children": [],
+          "created_at": "2025-01-15T10:10:00.000Z",
+          "updated_at": "2025-01-15T11:30:00.000Z"
+        }
+      ]
+    }
+  ]
+}

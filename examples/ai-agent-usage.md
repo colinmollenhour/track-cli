@@ -489,6 +489,6 @@ track continue abc123 \
 ## See Also
 
 - [Usage Guide](../docs/usage.md) - General usage patterns
-- [AI Agent Integration](../docs/ai-agents.md) - Comprehensive AI agent guide
+- [AI Agent Integration](../docs/AGENTS.md) - Comprehensive AI agent guide
 - [Basic Workflow](basic-workflow.md) - Simple project example
 - [Complex Project](complex-project.md) - Multi-feature example
