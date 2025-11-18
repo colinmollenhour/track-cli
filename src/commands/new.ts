@@ -1,7 +1,7 @@
 import { projectExists } from '../utils/paths.js';
 import { generateId } from '../utils/id.js';
 import { getCurrentTimestamp } from '../utils/timestamp.js';
-import { createTrack, trackExists, addTrackFiles } from '../storage/database.js';
+import { createTrack, trackExists, addTrackFiles, getRootTrack } from '../storage/database.js';
 import type { CreateTrackParams } from '../models/types.js';
 
 /**
@@ -35,25 +35,35 @@ export function newCommand(title: string, options: NewCommandOptions): void {
     process.exit(1);
   }
 
-  // 3. Validate parent_id if provided
-  if (options.parent) {
-    if (!trackExists(options.parent)) {
-      console.error(`Error: Unknown track id: ${options.parent}`);
-      console.error('The specified parent track does not exist.');
+  // 3. Default to root track if no parent specified (enforce single-root constraint)
+  let parentId = options.parent;
+  if (!parentId) {
+    const rootTrack = getRootTrack();
+    if (!rootTrack) {
+      console.error('Error: No root track found.');
+      console.error('This should not happen. Try running "track init" again.');
       process.exit(1);
     }
+    parentId = rootTrack.id;
+  }
+
+  // 4. Validate parent_id exists
+  if (!trackExists(parentId)) {
+    console.error(`Error: Unknown track id: ${parentId}`);
+    console.error('The specified parent track does not exist.');
+    process.exit(1);
   }
 
   try {
-    // 4. Generate ID and timestamp
+    // 5. Generate ID and timestamp
     const trackId = generateId();
     const now = getCurrentTimestamp();
 
-    // 5. Build CreateTrackParams
+    // 6. Build CreateTrackParams
     const newTrack: CreateTrackParams = {
       id: trackId,
       title: title.trim(),
-      parent_id: options.parent || null,
+      parent_id: parentId,
       summary: options.summary || '',
       next_prompt: options.next || '',
       status: 'planned',
@@ -61,20 +71,18 @@ export function newCommand(title: string, options: NewCommandOptions): void {
       updated_at: now,
     };
 
-    // 6. Create track in database
+    // 7. Create track in database
     createTrack(newTrack);
 
-    // 7. Add file associations if provided
+    // 8. Add file associations if provided
     if (options.file && options.file.length > 0) {
       addTrackFiles(trackId, options.file);
     }
 
-    // 8. Success message
+    // 9. Success message
     console.log(`Created track: ${title}`);
     console.log(`Track ID: ${trackId}`);
-    if (options.parent) {
-      console.log(`Parent: ${options.parent}`);
-    }
+    console.log(`Parent: ${parentId}`);
     if (options.file && options.file.length > 0) {
       console.log(`Files: ${options.file.length} file(s) associated`);
     }

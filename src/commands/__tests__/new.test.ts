@@ -154,16 +154,17 @@ describe('new command', () => {
       });
     });
 
-    it('should create track without parent (root level)', async () => {
+    it('should default to root as parent when --parent is omitted', async () => {
       await withTempDir(() => {
         initCommand('Test');
+        const root = getRootTrack();
 
         consoleMock.restore();
         exitMock.restore();
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        newCommand('Root level track', {
+        newCommand('Feature without explicit parent', {
           summary: 'Test',
           next: 'Next',
         });
@@ -173,7 +174,8 @@ describe('new command', () => {
         const trackId = trackIdLog?.split('Track ID: ')[1];
 
         const track = getTrack(trackId!);
-        expect(track?.parent_id).toBeNull();
+        expect(track?.parent_id).toBe(root?.id);
+        expect(track?.parent_id).not.toBeNull();
       });
     });
 

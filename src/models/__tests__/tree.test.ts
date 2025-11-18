@@ -26,9 +26,9 @@ describe('tree building', () => {
       const result = buildTrackTree(tracks, new Map());
 
       expect(result).toHaveLength(1);
-      expect(result[0].kind).toBe('super');
-      expect(result[0].children).toEqual([]);
-      expect(result[0].files).toEqual([]);
+      expect(result[0]!.kind).toBe('super');
+      expect(result[0]!.children).toEqual([]);
+      expect(result[0]!.files).toEqual([]);
     });
 
     it('should derive "task" kind for leaf track (has parent, no children)', () => {
@@ -222,7 +222,7 @@ describe('tree building', () => {
 
       const result = buildTrackTree(tracks, fileMap);
 
-      expect(result[0].files).toEqual(['src/file1.ts', 'src/file2.ts']);
+      expect(result[0]!.files).toEqual(['src/file1.ts', 'src/file2.ts']);
     });
 
     it('should return empty files array when track has no files', () => {
@@ -241,7 +241,7 @@ describe('tree building', () => {
 
       const result = buildTrackTree(tracks, new Map());
 
-      expect(result[0].files).toEqual([]);
+      expect(result[0]!.files).toEqual([]);
     });
 
     it('should preserve all track fields in output', () => {
