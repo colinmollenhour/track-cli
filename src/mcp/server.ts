@@ -1,9 +1,6 @@
 import http from 'node:http';
 import { Buffer } from 'node:buffer';
-import commandsEnvelope from './data/commands.json';
-import examplesEnvelope from './data/examples.json';
-import stateEnvelope from './data/state.json';
-import versionEnvelope from './data/version.json';
+import { createRequire } from 'node:module';
 import {
   CommandsPayload,
   Envelope,
@@ -11,6 +8,13 @@ import {
   MAX_PAYLOAD_BYTES,
   StatePayload,
 } from './types.js';
+
+const require = createRequire(import.meta.url);
+
+const commandsEnvelope = require('./data/commands.json');
+const examplesEnvelope = require('./data/examples.json');
+const stateEnvelope = require('./data/state.json');
+const versionEnvelope = require('./data/version.json');
 
 const PATH_PREFIX = '/mcp/track';
 const DEFAULT_PORT = 8765;
