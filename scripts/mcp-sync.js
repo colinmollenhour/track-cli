@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-env node */
+/* global console, process */
 /**
  * Generate MCP metadata JSON files from a single source of truth.
  * Keeps payloads tiny and deterministic for agent consumption.
@@ -8,7 +10,6 @@ import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { commandMetadata } from '../dist/commands/metadata.js';
-import { commandMetadata } from '../dist/mcp/metadata.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -40,7 +41,6 @@ async function writeEnvelope(filename, envelopeJson) {
   await mkdir(DATA_DIR, { recursive: true });
   const target = resolve(DATA_DIR, filename);
   await writeFile(target, `${envelopeJson}\n`, 'utf8');
-  // eslint-disable-next-line no-console
   console.log(`wrote ${filename}`);
 }
 
@@ -48,9 +48,16 @@ async function main() {
   const pkgRaw = await readFile(resolve(ROOT, 'package.json'), 'utf8');
   const pkg = JSON.parse(pkgRaw);
   const commandsPayload = {
-    commands: commandMetadata.map(({ example, cliFlag: _cliFlag, flags, ...rest }) => ({
-      ...rest,
-      flags: flags.map(({ cliFlag, ...flagRest }) => flagRest),
+    commands: commandMetadata.map((cmd) => ({
+      name: cmd.name,
+      summary: cmd.summary,
+      args: cmd.args,
+      usage: cmd.usage,
+      flags: cmd.flags.map((flag) => {
+        const { cliFlag, ...flagRest } = flag;
+        void cliFlag;
+        return flagRest;
+      }),
     })),
   };
   const examplesPayload = {
@@ -59,10 +66,10 @@ async function main() {
   const versionPayload = { cli: `track-cli ${pkg.version}`, schema: SCHEMA_VERSION };
   const statePayload = { cwd: '', defaultConfig: '.track/config.json' };
 
-  const { envelope: commandsEnv, json: commandsJson } = makeEnvelope(commandsPayload);
-  const { envelope: examplesEnv, json: examplesJson } = makeEnvelope(examplesPayload);
-  const { envelope: versionEnv, json: versionJson } = makeEnvelope(versionPayload);
-  const { envelope: stateEnv, json: stateJson } = makeEnvelope(statePayload);
+  const { envelope: commandsEnv } = makeEnvelope(commandsPayload);
+  const { envelope: examplesEnv } = makeEnvelope(examplesPayload);
+  const { envelope: versionEnv } = makeEnvelope(versionPayload);
+  const { envelope: stateEnv } = makeEnvelope(statePayload);
 
   await writeEnvelope('commands.json', JSON.stringify(commandsEnv, null, 2));
   await writeEnvelope('examples.json', JSON.stringify(examplesEnv, null, 2));
@@ -71,7 +78,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  // eslint-disable-next-line no-console
   console.error('mcp:sync failed', error);
   process.exitCode = 1;
 });
