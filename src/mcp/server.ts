@@ -244,6 +244,36 @@ function route(req: http.IncomingMessage, res: http.ServerResponse): void {
   notFound(res, `Unknown route: ${pathname}`);
 }
 
+// Helper for tests: simulate a request without opening a real socket.
+export function handleRequest(
+  url: string,
+): { status: number; headers: Record<string, unknown>; body: string } {
+  const req = { url } as http.IncomingMessage;
+  const res: {
+    status?: number;
+    headers?: Record<string, unknown>;
+    body?: string;
+    writeHead: (status: number, headers?: Record<string, unknown>) => void;
+    end: (body?: unknown) => void;
+  } = {
+    writeHead(status, headers = {}) {
+      this.status = status;
+      this.headers = headers;
+    },
+    end(body = '') {
+      this.body = typeof body === 'string' ? body : JSON.stringify(body);
+    },
+  };
+
+  route(req, res as unknown as http.ServerResponse);
+
+  return {
+    status: res.status ?? 0,
+    headers: res.headers ?? {},
+    body: res.body ?? '',
+  };
+}
+
 export function startServer(port = DEFAULT_PORT, host = DEFAULT_HOST): http.Server {
   const server = http.createServer(route);
   server.listen(port, host, () => {
