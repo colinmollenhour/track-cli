@@ -2,25 +2,32 @@
 
 ## Project Structure & Module Organization
 
-- Source lives in `src/` (ESM TypeScript). Entry point is `src/index.ts`; CLI commands sit in `src/commands/`; shared helpers in `src/utils/`; data models in `src/models/`; reusable API surface in `src/lib/`. Tests are colocated under `src/__tests__/` and `src/commands/__tests__/`.
-- Built output goes to `dist/` (keep changes in `src/`; never hand-edit `dist/`).
-- Docs and examples: `README.md` for usage, `docs/` for deeper notes, `examples/` for sample commands, `coverage/` from test runs.
+- Source: `src/` (ESM TS). Entry `src/index.ts`; commands `src/commands/`; helpers `src/utils/`; models `src/models/`; library API `src/lib/`; tests in `src/__tests__/` and command subfolders.
+- Build output: `dist/` (never edit directly).
+- Docs/examples: `README.md`, `docs/`, `examples/`, `coverage/`.
 
 ## Build, Test, and Development Commands
 
-- `npm run build` — compile TypeScript to `dist/`.
-- `npm run dev` — watch + recompile on change.
-- `npm run test` / `npm run test:watch` — run Vitest in CI/watch modes; `npm run test:coverage` for V8 coverage.
-- `npm run lint` / `npm run lint:fix` — ESLint with TypeScript, Prettier integration.
-- `npm run format` / `npm run format:check` — apply/check Prettier formatting.
-- `npm run typecheck` — TypeScript with `noEmit` for strict typing.
+- `npm run build` — compile to `dist/` (run before manual CLI testing).
+- `npm run dev` — watch + recompile.
+- `npm run test` / `npm run test:watch` — Vitest CI/watch; `npm run test:coverage` for V8 coverage.
+- `npm run lint` / `npm run lint:fix` — ESLint with TypeScript + Prettier.
+- `npm run format` / `npm run format:check` — apply/check Prettier.
+- `npm run typecheck` — `tsc --noEmit`.
 
 ## Coding Style & Naming Conventions
 
 - TypeScript, ESM. Prefer explicit types; avoid `any` (lint-enforced). Allow unused params only when prefixed with `_`.
-- Formatting: 2-space indent, `printWidth` 100, single quotes, semicolons, LF endings (see `prettier.config.js`).
+- Formatting: 2-space indent, `printWidth` 100, single quotes, semicolons, LF endings (`prettier.config.js`).
 - File naming: lowercase with dashes for commands, `*.ts` for sources, `*.test.ts` for tests.
 - Keep command modules small and side-effect free; share logic via `src/lib/` and `src/utils/`.
+
+## Development Principles
+
+- KISS & YAGNI: prefer simple solutions; build only what v1 needs.
+- SOLID-minded: single responsibility, small interfaces, depend on abstractions.
+- Constraints: 4 commands, 2 tables; current state only (no history in v1); keep storage/models/commands/utils separate.
+- AI-friendly: stable JSON via `track status --json`; write comprehensive summaries and actionable next steps; use the CLI, not direct SQLite access.
 
 ## Testing Guidelines
 
@@ -36,5 +43,5 @@
 
 ## Security & Configuration Tips
 
-- The CLI stores state in `.track/` (SQLite with WAL). Treat it as user data; avoid committing it.
-- Node.js >=18 required. Avoid adding global state; prefer dependency injection for command handlers to keep tests predictable.
+- State in `.track/` (SQLite WAL); never commit it.
+- Node.js >=18. Avoid global state; prefer dependency injection for predictable tests.
