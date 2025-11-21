@@ -8,11 +8,15 @@ import {
   Envelope,
   ExamplesPayload,
   MAX_PAYLOAD_BYTES,
+  RecentErrorsOptions,
+  RecentErrorsPayload,
   StatePayload,
 } from './types.js';
 
 const PATH_PREFIX = '/mcp/track';
 const DEFAULT_PORT = 8765;
+const DEFAULT_MAX_RECENT_ERRORS = 20;
+const DEFAULT_HOST = '127.0.0.1';
 
 type EnvelopeMap = {
   commands: Envelope<CommandsPayload>;
@@ -36,6 +40,58 @@ const envelopes: EnvelopeMap = {
   state: loadEnvelope<StatePayload>('./data/state.json'),
   version: loadEnvelope<{ cli: string; schema: number }>('./data/version.json'),
 };
+
+function getRecentErrorsOptions(url: URL): RecentErrorsOptions {
+  const requestedLimit = Number.parseInt(url.searchParams.get('limit') ?? '', 10);
+  const maxLimit = DEFAULT_MAX_RECENT_ERRORS;
+  const limit =
+    Number.isNaN(requestedLimit) || requestedLimit <= 0 ? 5 : Math.min(requestedLimit, maxLimit);
+
+  const logPath = process.env.MCP_ERRORS_FILE ?? '.track/mcp-errors.log';
+
+  return { limit, maxLimit, logPath };
+}
+
+function readRecentErrors({ limit, logPath }: RecentErrorsOptions): RecentErrorsPayload {
+  try {
+    const fullPath = resolve(process.cwd(), logPath);
+    const raw = readFileSync(fullPath, 'utf8');
+    const lines = raw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const entries = lines
+      .slice(-limit)
+      .reverse()
+      .map((line) => {
+        try {
+          const parsed = JSON.parse(line) as { timestamp?: string; message?: string };
+          return {
+            timestamp: parsed.timestamp ?? new Date().toISOString(),
+            message: parsed.message ?? line,
+          };
+        } catch {
+          return { timestamp: new Date().toISOString(), message: line };
+        }
+      });
+
+    return { errors: entries };
+  } catch {
+    return { errors: [] };
+  }
+}
+
+function buildRecentErrorsEnvelope(url: URL): Envelope<RecentErrorsPayload> {
+  const now = new Date().toISOString();
+  const errors = readRecentErrors(getRecentErrorsOptions(url));
+  return {
+    data: errors,
+    etag: `recent:${errors.errors.length}:${now}`,
+    lastUpdated: now,
+    schemaVersion: envelopes.version.schemaVersion,
+  };
+}
 
 function sendJson(
   res: http.ServerResponse,
@@ -134,8 +190,9 @@ function handleExample(res: http.ServerResponse, command: string): void {
   sendJson(res, 200, response, response.etag, response.lastUpdated);
 }
 
-function handleRecentErrors(res: http.ServerResponse): void {
-  sendJson(res, 501, { error: 'recent-errors resource not implemented yet' });
+function handleRecentErrors(res: http.ServerResponse, url: URL): void {
+  const envelope = buildRecentErrorsEnvelope(url);
+  sendJson(res, 200, envelope, envelope.etag, envelope.lastUpdated);
 }
 
 function route(req: http.IncomingMessage, res: http.ServerResponse): void {
@@ -180,22 +237,23 @@ function route(req: http.IncomingMessage, res: http.ServerResponse): void {
   }
 
   if (pathname === `${PATH_PREFIX}/recent-errors`) {
-    handleRecentErrors(res);
+    handleRecentErrors(res, url);
     return;
   }
 
   notFound(res, `Unknown route: ${pathname}`);
 }
 
-export function startServer(port = DEFAULT_PORT): http.Server {
+export function startServer(port = DEFAULT_PORT, host = DEFAULT_HOST): http.Server {
   const server = http.createServer(route);
-  server.listen(port, '127.0.0.1', () => {
-    console.log(`MCP server listening on http://127.0.0.1:${port}${PATH_PREFIX}`);
+  server.listen(port, host, () => {
+    console.log(`MCP server listening on http://${host}:${port}${PATH_PREFIX}`);
   });
   return server;
 }
 
 if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').href) {
   const port = Number.parseInt(process.env.MCP_PORT ?? '', 10);
-  startServer(Number.isNaN(port) ? DEFAULT_PORT : port);
+  const host = process.env.MCP_HOST ?? DEFAULT_HOST;
+  startServer(Number.isNaN(port) ? DEFAULT_PORT : port, host);
 }

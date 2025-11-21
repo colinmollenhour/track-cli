@@ -54,3 +54,9 @@ export interface ErrorEntry {
 export interface RecentErrorsPayload {
   errors: ErrorEntry[];
 }
+
+export interface RecentErrorsOptions {
+  limit: number;
+  maxLimit: number;
+  logPath: string;
+}
