@@ -73,6 +73,7 @@ track init "My Project" --force # Overwrite existing project
 ```
 
 **Options:**
+
 - `name` - Project name (defaults to directory name)
 - `-F, --force` - Overwrite existing `.track/` database
 
@@ -90,6 +91,7 @@ track new "API Integration" \
 ```
 
 **Options:**
+
 - `--parent <id>` - Parent track ID (defaults to root)
 - `--summary <text>` - What's been done / current state
 - `--next <text>` - What to do next
@@ -107,6 +109,7 @@ track continue abc12345 \
 ```
 
 **Options:**
+
 - `--summary <text>` - Updated summary
 - `--next <text>` - Next steps
 - `--status <value>` - Status: `planned`, `in_progress`, `done`, `blocked`, `superseded`
@@ -124,6 +127,7 @@ track status --json # JSON output for AI agents
 ```
 
 **Human Output Example:**
+
 ```
 My Web App (abc12345) [in_progress]
 ├── User Authentication (def67890) [in_progress]
@@ -183,6 +187,7 @@ cp track-cli/docs/AGENTS.md your-project/AGENTS.md
 ```
 
 **Includes:**
+
 - Essential 3-step workflow (session start/during/end)
 - Command quick reference
 - JSON output structure
@@ -221,6 +226,7 @@ For LLM tool calling (OpenAI, Anthropic, etc.):
 ```
 
 **Resources:**
+
 - `docs/schema.json` - JSON schema for `track status --json` output
 - `docs/tools.json` - Function calling definitions for all commands
 
@@ -243,6 +249,7 @@ track continue <id> \
 **Key Principle:** No history tracking means summaries must be comprehensive. Use the **Breadcrumb Pattern** for detailed, actionable next steps.
 
 **Documentation:**
+
 - [AGENTS.md](docs/AGENTS.md) - Concise AI agent guide (copy to your project)
 - [Claude Code Setup](docs/claude-code-setup.md) - Personal skill installation
 - [AI Agent Examples](examples/ai-agent-usage.md) - Complete workflow examples
@@ -273,9 +280,9 @@ npm install
 npm run build
 
 # Run tests
-npm test                 # Watch mode
-npm run test:run        # Single run
-npm run test:coverage   # With coverage report
+npm test                 # Single run
+npm run test:watch       # Watch mode
+npm run test:coverage    # With coverage report
 
 # Lint and format
 npm run lint            # Check for issues
@@ -330,18 +337,21 @@ Track CLI follows a layered architecture with clean separation of concerns:
 ## Why Track CLI?
 
 ### vs. Manual TODO.md
+
 - Structured data with stable JSON API
 - Multi-agent safe (SQLite with WAL mode)
 - File associations for context
 - Query by status, parent, etc.
 
 ### vs. GitHub Issues
+
 - Works locally and offline
 - No network latency
 - Designed for AI agents, not humans
 - Current state only (no noise from history)
 
 ### vs. Other Task Trackers
+
 - Minimal API surface (4 commands)
 - No interactive prompts (AI-friendly)
 - Opaque storage prevents AI from bypassing CLI
@@ -358,6 +368,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for dev
 ## Credits
 
 Built with:
+
 - [Commander.js](https://github.com/tj/commander.js) - CLI framework
 - [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) - SQLite bindings
 - [nanoid](https://github.com/ai/nanoid) - ID generation

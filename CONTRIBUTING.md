@@ -104,10 +104,10 @@ Follow the [Coding Standards](#coding-standards) and [Project Principles](#proje
 
 ```bash
 # Run tests in watch mode (during development)
-npm test
+npm run test:watch
 
 # Run tests once
-npm run test:run
+npm test
 
 # Run with coverage
 npm run test:coverage
@@ -298,10 +298,10 @@ describe('Feature Name', () => {
 
 ```bash
 # Watch mode (development)
-npm test
+npm run test:watch
 
 # Single run (CI)
-npm run test:run
+npm test
 
 # With coverage
 npm run test:coverage
