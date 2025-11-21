@@ -25,4 +25,4 @@ export const DEFAULT_ERRORS_LOG_PATH = '.track/mcp-errors.log';
 export const PATH_PREFIX = '/mcp/track';
 
 /** Schema version for MCP envelopes */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;

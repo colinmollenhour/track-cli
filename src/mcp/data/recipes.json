@@ -1,0 +1,49 @@
+{
+  "data": {
+    "recipes": [
+      {
+        "name": "in_progress_tracks",
+        "jq": ".tracks[] | select(.status==\"in_progress\") | {id, title, kind}",
+        "description": "All in-progress tracks (id + title)"
+      },
+      {
+        "name": "next_steps",
+        "jq": ".tracks[] | select(.status==\"in_progress\") | {title, next: .next_prompt}",
+        "description": "Active next prompts for current work"
+      },
+      {
+        "name": "blocked_tracks",
+        "jq": ".tracks[] | select(.status==\"blocked\") | {title, parent: .parent_id, why: .summary}",
+        "description": "Blocked tracks with context for escalation"
+      },
+      {
+        "name": "missing_next_prompts",
+        "jq": ".tracks[] | select((.status!=\"done\") and (.next_prompt|length==0)) | {id, title, status}",
+        "description": "Tracks missing next prompts (weak breadcrumbs)"
+      },
+      {
+        "name": "files_by_feature",
+        "jq": ".tracks[] | select(.parent_id==$FEATURE) | {title, files}",
+        "description": "Files grouped by feature (use --arg FEATURE <id>)"
+      },
+      {
+        "name": "superseded_tracks",
+        "jq": ".tracks[] | select(.status==\"superseded\") | {title, note: .next_prompt}",
+        "description": "Superseded tracks with replacement references"
+      },
+      {
+        "name": "feature_completion",
+        "jq": "[.tracks[] | select(.parent_id==$FEATURE)] | group_by(.status) | map({status: .[0].status, count: length})",
+        "description": "Per-feature completion snapshot (use --arg FEATURE <id>)"
+      },
+      {
+        "name": "all_files",
+        "jq": ".tracks[].files[] | select(. != null)",
+        "description": "Extract all tracked files"
+      }
+    ]
+  },
+  "etag": "recipes:v2",
+  "lastUpdated": "2025-01-21T00:00:00Z",
+  "schemaVersion": 2
+}

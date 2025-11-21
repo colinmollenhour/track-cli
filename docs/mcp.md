@@ -6,129 +6,127 @@ The MCP server exposes a minimal, cached view of Track CLI metadata for AI codin
 
 All responses share envelope fields: `data`, `lastUpdated`, `schemaVersion`, `etag`.
 
-### `/mcp/track/commands`
-List all commands with flags and args.
+### `/mcp/track/quickstart`
+Get essential command patterns and session workflow (~400 tokens).
 
 **Example response:**
 ```json
 {
   "data": {
-    "commands": [
-      {
-        "name": "init",
-        "summary": "Initialize a new track project in the current directory",
-        "flags": [
-          {
-            "name": "force",
-            "alias": "F",
-            "description": "Overwrite existing .track directory if present",
-            "type": "boolean",
-            "required": false,
-            "defaultValue": false
-          }
-        ],
-        "args": [
-          {
-            "name": "name",
-            "required": false,
-            "description": "Project name (defaults to directory name)"
-          }
-        ],
-        "usage": "track init [name] [-F|--force]"
-      }
-    ]
+    "commands": {
+      "init": "track init [name]",
+      "new": "track new \"<title>\" [--parent <id>] [--summary \"...\"] [--next \"...\"] [--file <path>]",
+      "update": "track update <id> --summary \"...\" --next \"...\" [--status <s>] [--file <path>]",
+      "status": "track status [--json]"
+    },
+    "session_pattern": [
+      "Start: track status --json | jq '.tracks[] | select(.status==\"in_progress\")'",
+      "Work: Create/update tracks with clear summary and next_prompt",
+      "End: Update with comprehensive summary + specific next steps"
+    ],
+    "breadcrumb": "<file>: do <step>; then <step>. Acceptance: <result>. Context: <why>.",
+    "statuses": "planned → in_progress → done|blocked|superseded",
+    "json_fields": "id, title, parent_id, summary, next_prompt, status, files[], children[], kind (super|feature|task), created_at, updated_at",
+    "required_flags": {
+      "new": "title required; --summary, --next optional but recommended",
+      "update": "id required; --summary, --next recommended; --status defaults to in_progress"
+    }
   },
-  "lastUpdated": "2025-11-21T15:12:42.008Z",
-  "schemaVersion": 1,
-  "etag": "e7f3a9848563"
+  "etag": "quickstart:v2",
+  "lastUpdated": "2025-01-21T00:00:00Z",
+  "schemaVersion": 2
 }
 ```
 
-### `/mcp/track/examples`
-Get shortest valid example per command.
+### `/mcp/track/recipes`
+Get jq one-liners for common queries (~300 tokens).
 
 **Example response:**
 ```json
 {
   "data": {
-    "examples": [
+    "recipes": [
       {
-        "name": "init",
-        "example": "track init \"My Project\""
+        "name": "in_progress_tracks",
+        "jq": ".tracks[] | select(.status==\"in_progress\") | {id, title, kind}",
+        "description": "All in-progress tracks (id + title)"
       },
       {
-        "name": "new",
-        "example": "track new \"Add login screen\" --parent ROOT123 --summary \"UI stub\" --next \"Hook API\""
+        "name": "next_steps",
+        "jq": ".tracks[] | select(.status==\"in_progress\") | {title, next: .next_prompt}",
+        "description": "Active next prompts for current work"
+      },
+      {
+        "name": "blocked_tracks",
+        "jq": ".tracks[] | select(.status==\"blocked\") | {title, parent: .parent_id, why: .summary}",
+        "description": "Blocked tracks with context for escalation"
       }
     ]
   },
-  "lastUpdated": "2025-11-21T15:12:42.009Z",
-  "schemaVersion": 1,
-  "etag": "5b0a685004a6"
+  "etag": "recipes:v2",
+  "lastUpdated": "2025-01-21T00:00:00Z",
+  "schemaVersion": 2
 }
 ```
 
-### `/mcp/track/help/{command}`
-Get usage + flags for a specific command.
+### `/mcp/track/status`
+Get live project status with optional filtering (variable size).
 
-**Example request:** `/mcp/track/help/init`
+**Query parameters:**
+- `status` — Filter by status (comma-separated): `?status=in_progress,planned`
+- `kind` — Filter by kind (comma-separated): `?kind=task,feature`
+- `parent` — Filter by parent ID: `?parent=abc123`
+
+**Example request:** `/mcp/track/status?status=in_progress`
 
 **Example response:**
 ```json
 {
   "data": {
-    "command": {
-      "name": "init",
-      "summary": "Initialize a new track project in the current directory",
-      "flags": [...],
-      "args": [...],
-      "usage": "track init [name] [-F|--force]"
-    }
+    "tracks": [
+      {
+        "id": "abc12345",
+        "title": "Implement login",
+        "parent_id": "xyz99999",
+        "kind": "task",
+        "summary": "Form built, API integration pending",
+        "next_prompt": "src/api/auth.ts: wire login endpoint; test with valid credentials",
+        "status": "in_progress",
+        "files": ["src/components/LoginForm.tsx", "src/hooks/useLogin.ts"],
+        "children": [],
+        "created_at": "2025-11-20T10:00:00Z",
+        "updated_at": "2025-11-21T14:30:00Z"
+      }
+    ]
   },
-  "lastUpdated": "2025-11-21T15:12:42.008Z",
-  "schemaVersion": 1,
-  "etag": "e7f3a9848563:init"
+  "etag": "status:1:1732201234567",
+  "lastUpdated": "2025-11-21T15:00:00Z",
+  "schemaVersion": 2
 }
 ```
 
-### `/mcp/track/example/{command}`
-Get example for a specific command.
+**Note:** Returns 404 if no `.track/track.db` exists in current directory.
 
-**Example request:** `/mcp/track/example/new`
-
-**Example response:**
-```json
-{
-  "data": {
-    "example": {
-      "name": "new",
-      "example": "track new \"Add login screen\" --parent ROOT123 --summary \"UI stub\" --next \"Hook API\""
-    }
-  },
-  "lastUpdated": "2025-11-21T15:12:42.009Z",
-  "schemaVersion": 1,
-  "etag": "5b0a685004a6:new"
-}
-```
+**Token cost:** Variable based on project size (~360 tokens per track).
 
 ### `/mcp/track/version`
-Get CLI + schema version.
+Get CLI + schema version (~40 tokens).
 
 **Example response:**
 ```json
 {
   "data": {
     "cli": "track-cli 0.1.0",
-    "schema": 1
+    "schema": 2
   },
   "lastUpdated": "2025-11-21T15:12:42.009Z",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "etag": "84632f552cd0"
 }
 ```
 
 ### `/mcp/track/state`
-Get current working directory (runtime) + default config path.
+Get current working directory (runtime) + default config path (~43 tokens).
 
 **Example response:**
 ```json
@@ -138,7 +136,7 @@ Get current working directory (runtime) + default config path.
     "defaultConfig": ".track/config.json"
   },
   "lastUpdated": "2025-11-21T15:12:42.009Z",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "etag": "774131bbbed6"
 }
 ```
@@ -160,11 +158,24 @@ Get newest log entries (best-effort, bounded to max 20).
     ]
   },
   "lastUpdated": "2025-11-21T15:12:42.009Z",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "etag": "recent:1:2025-11-21T15:12:42.009Z"
 }
 ```
 **Note:** Returns empty array if log file is missing or unreadable.
+
+## Token Cost Summary
+
+| Endpoint | Size (tokens) | Use Case |
+|----------|---------------|----------|
+| `/quickstart` | ~400 | Essential commands + patterns |
+| `/recipes` | ~300 | jq query patterns |
+| `/version` | ~40 | CLI version check |
+| `/state` | ~43 | Current directory |
+| `/status` (small project) | ~1,100 | Live project data (3 tracks) |
+| `/status` (medium project) | ~3,500 | Live project data (10 tracks) |
+| **Static baseline** | **~783** | Total without project data |
+| **Typical usage** | **~1,900** | Static + small project |
 
 ## Environment Variables
 - `MCP_PORT` (default `8765`) — listening port.
@@ -176,14 +187,20 @@ Get newest log entries (best-effort, bounded to max 20).
 - `npm run mcp:start` — start compiled server from `dist`.
 - `npm run mcp:dev` — dev compile watch (server not auto-run).
 
-Metadata source of truth lives in `src/commands/metadata.ts`. This feeds both the CLI (Commander wiring) and MCP outputs; update it when commands/flags change, then run `npm run mcp:sync`.
+**Note:** `quickstart.json` and `recipes.json` are maintained as static files in `src/mcp/data/`.
+`mcp:sync` only regenerates `version.json` and `state.json` from source.
 
 ## Data Regeneration
-`scripts/mcp-sync.js` is the single source of truth for command metadata. Update it when commands/flags change, then run `npm run mcp:sync` to refresh envelopes and `dist` artifacts.
+
+Run `npm run mcp:sync` after:
+- Bumping CLI version in `package.json`
+- Changing schema version in `src/mcp/constants.ts`
+- Updating static content in `src/mcp/data/quickstart.json` or `recipes.json`
 
 ## Size & Safety
 - Payloads capped at 5 KB; server returns 500 if exceeded.
 - recent-errors is best-effort: returns empty array if log missing or unreadable.
+- `/status` reads database directly via TrackManager (CLI library interface, not raw SQLite).
 
 ## Security
 
@@ -201,7 +218,8 @@ The MCP server binds to `127.0.0.1` (localhost) by default for security. This pr
 **Best practices:**
 - Keep `MCP_HOST=127.0.0.1` unless you have a specific requirement
 - No authentication is provided by default (localhost-only assumed)
-- Read-only endpoints only (no state mutation possible)
+- Read-only for metadata; `/status` reads database but does not mutate
+- Write operations (create/update tracks) remain CLI-only (maintains "opaque storage" principle)
 
 ## Troubleshooting
 
@@ -222,34 +240,23 @@ The MCP server binds to `127.0.0.1` (localhost) by default for security. This pr
 - Check server logs for startup errors
 - Ensure firewall isn't blocking the port
 
-### Empty commands or stale data
+### Status endpoint returns 404
 
-**Problem:** MCP endpoints return outdated or empty command metadata
-
-**Solution:** Regenerate metadata after changing commands:
-```bash
-npm run mcp:sync  # Regenerates metadata from src/commands/metadata.ts
-```
-
-### 404 for valid command
-
-**Error:** `{"error":"Unknown command \"my-command\""}`
+**Error:** `{"error":"No track database found in current directory"}`
 
 **Solution:**
-- Verify command name matches exactly (case-sensitive)
-- Check `/mcp/track/commands` to see available commands
-- Run `npm run mcp:sync` if you recently added the command
+- Ensure `.track/track.db` exists in the current working directory
+- Run `track init` if project not initialized
+- Check `cwd` from `/mcp/track/state` to verify server working directory
 
-### Invalid command name
+### Stale version or schema
 
-**Error:** `{"error":"Invalid command name"}`
+**Problem:** `/version` endpoint returns old schema version or CLI version
 
-**Cause:** Command parameter is empty or contains slashes
-
-**Solution:** Use valid command names without path separators:
-- ✅ `/mcp/track/help/init`
-- ❌ `/mcp/track/help/`
-- ❌ `/mcp/track/help/foo/bar`
+**Solution:** Regenerate metadata:
+```bash
+npm run mcp:sync  # Regenerates version.json from package.json and constants
+```
 
 ## Sample Usage
 
@@ -260,11 +267,17 @@ npm run mcp:start
 
 Query endpoints:
 ```bash
-# Get all commands
-curl -s http://127.0.0.1:8765/mcp/track/commands | jq .
+# Get quickstart guide
+curl -s http://127.0.0.1:8765/mcp/track/quickstart | jq .
 
-# Get help for specific command
-curl -s http://127.0.0.1:8765/mcp/track/help/new | jq .
+# Get jq recipes
+curl -s http://127.0.0.1:8765/mcp/track/recipes | jq .
+
+# Get live project status
+curl -s http://127.0.0.1:8765/mcp/track/status | jq .
+
+# Filter in-progress tracks only
+curl -s "http://127.0.0.1:8765/mcp/track/status?status=in_progress" | jq .
 
 # Get recent errors (max 3)
 curl -s "http://127.0.0.1:8765/mcp/track/recent-errors?limit=3" | jq .
@@ -276,5 +289,5 @@ curl -s http://127.0.0.1:8765/mcp/track/version | jq .
 Use custom port:
 ```bash
 MCP_PORT=8877 npm run mcp:start &
-curl -s http://127.0.0.1:8877/mcp/track/commands | jq .
+curl -s http://127.0.0.1:8877/mcp/track/quickstart | jq .
 ```

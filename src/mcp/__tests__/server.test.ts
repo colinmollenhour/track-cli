@@ -3,22 +3,52 @@ import { handleRequest } from '../server.js';
 import { MAX_PAYLOAD_BYTES } from '../constants.js';
 
 describe('MCP server handler', () => {
-  it('serves commands with envelope fields', () => {
-    const res = handleRequest('/mcp/track/commands');
+  it('serves quickstart with envelope fields', () => {
+    const res = handleRequest('/mcp/track/quickstart');
     expect(res.status).toBe(200);
     const body = JSON.parse(res.body) as {
-      data: { commands: unknown[] };
+      data: {
+        commands: Record<string, string>;
+        session_pattern: string[];
+        breadcrumb: string;
+      };
       etag: string;
       lastUpdated: string;
+      schemaVersion: number;
     };
-    expect(Array.isArray(body.data.commands)).toBe(true);
-    expect(body.data.commands.length).toBeGreaterThan(0);
+    expect(body.data.commands).toBeTruthy();
+    expect(body.data.commands.init).toBeTruthy();
+    expect(body.data.commands.new).toBeTruthy();
+    expect(body.data.commands.update).toBeTruthy();
+    expect(body.data.commands.status).toBeTruthy();
+    expect(Array.isArray(body.data.session_pattern)).toBe(true);
+    expect(body.data.breadcrumb).toBeTruthy();
     expect(body.etag).toBeTruthy();
     expect(body.lastUpdated).toBeTruthy();
+    expect(body.schemaVersion).toBe(2);
+  });
+
+  it('serves recipes with envelope fields', () => {
+    const res = handleRequest('/mcp/track/recipes');
+    expect(res.status).toBe(200);
+    const body = JSON.parse(res.body) as {
+      data: { recipes: Array<{ name: string; jq: string; description: string }> };
+      etag: string;
+      lastUpdated: string;
+      schemaVersion: number;
+    };
+    expect(Array.isArray(body.data.recipes)).toBe(true);
+    expect(body.data.recipes.length).toBeGreaterThan(0);
+    expect(body.data.recipes[0]).toHaveProperty('name');
+    expect(body.data.recipes[0]).toHaveProperty('jq');
+    expect(body.data.recipes[0]).toHaveProperty('description');
+    expect(body.etag).toBeTruthy();
+    expect(body.lastUpdated).toBeTruthy();
+    expect(body.schemaVersion).toBe(2);
   });
 
   it('includes cache headers in response', () => {
-    const res = handleRequest('/mcp/track/commands');
+    const res = handleRequest('/mcp/track/quickstart');
     expect(res.status).toBe(200);
     expect(res.headers.ETag).toBeTruthy();
     expect(res.headers['Last-Modified']).toBeTruthy();
@@ -34,7 +64,7 @@ describe('MCP server handler', () => {
       etag: string;
     };
     expect(body.data.cli).toContain('track-cli');
-    expect(body.data.schema).toBe(1);
+    expect(body.data.schema).toBe(2);
     expect(body.etag).toBeTruthy();
   });
 
@@ -48,65 +78,11 @@ describe('MCP server handler', () => {
     expect(body.data.defaultConfig).toBe('.track/config.json');
   });
 
-  it('serves examples endpoint', () => {
-    const res = handleRequest('/mcp/track/examples');
-    expect(res.status).toBe(200);
-    const body = JSON.parse(res.body) as {
-      data: { examples: Array<{ name: string; example: string }> };
-    };
-    expect(Array.isArray(body.data.examples)).toBe(true);
-    expect(body.data.examples.length).toBeGreaterThan(0);
-    expect(body.data.examples[0]).toHaveProperty('name');
-    expect(body.data.examples[0]).toHaveProperty('example');
-  });
-
-  it('serves help for valid command', () => {
-    const res = handleRequest('/mcp/track/help/init');
-    expect(res.status).toBe(200);
-    const body = JSON.parse(res.body) as {
-      data: { command: { name: string; summary: string; flags: unknown[] } };
-    };
-    expect(body.data.command.name).toBe('init');
-    expect(body.data.command.summary).toBeTruthy();
-    expect(Array.isArray(body.data.command.flags)).toBe(true);
-  });
-
-  it('serves example for valid command', () => {
-    const res = handleRequest('/mcp/track/example/new');
-    expect(res.status).toBe(200);
-    const body = JSON.parse(res.body) as {
-      data: { example: { name: string; example: string } };
-    };
-    expect(body.data.example.name).toBe('new');
-    expect(body.data.example.example).toBeTruthy();
-  });
-
-  it('returns 404 for unknown help command', () => {
-    const res = handleRequest('/mcp/track/help/does-not-exist');
+  it('returns 404 for status when no database exists', () => {
+    const res = handleRequest('/mcp/track/status');
     expect(res.status).toBe(404);
     const body = JSON.parse(res.body) as { error: string };
-    expect(body.error).toContain('Unknown command');
-  });
-
-  it('returns 404 for empty command name in help', () => {
-    const res = handleRequest('/mcp/track/help/');
-    expect(res.status).toBe(404);
-    const body = JSON.parse(res.body) as { error: string };
-    expect(body.error).toContain('Invalid command name');
-  });
-
-  it('returns 404 for command name with slash in help', () => {
-    const res = handleRequest('/mcp/track/help/foo/bar');
-    expect(res.status).toBe(404);
-    const body = JSON.parse(res.body) as { error: string };
-    expect(body.error).toContain('Invalid command name');
-  });
-
-  it('returns 404 for empty command name in example', () => {
-    const res = handleRequest('/mcp/track/example/');
-    expect(res.status).toBe(404);
-    const body = JSON.parse(res.body) as { error: string };
-    expect(body.error).toContain('Invalid command name');
+    expect(body.error).toContain('No track database found');
   });
 
   it('returns 404 for unknown route', () => {
@@ -132,12 +108,10 @@ describe('MCP server handler', () => {
 
     it('all current endpoints respect size limit', () => {
       const endpoints = [
-        '/mcp/track/commands',
-        '/mcp/track/examples',
+        '/mcp/track/quickstart',
+        '/mcp/track/recipes',
         '/mcp/track/version',
         '/mcp/track/state',
-        '/mcp/track/help/init',
-        '/mcp/track/example/new',
         '/mcp/track/recent-errors',
       ];
 

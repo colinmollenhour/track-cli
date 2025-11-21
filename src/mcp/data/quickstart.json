@@ -1,0 +1,25 @@
+{
+  "data": {
+    "commands": {
+      "init": "track init [name]",
+      "new": "track new \"<title>\" [--parent <id>] [--summary \"...\"] [--next \"...\"] [--file <path>]",
+      "update": "track update <id> --summary \"...\" --next \"...\" [--status <s>] [--file <path>]",
+      "status": "track status [--json]"
+    },
+    "session_pattern": [
+      "Start: track status --json | jq '.tracks[] | select(.status==\"in_progress\")'",
+      "Work: Create/update tracks with clear summary and next_prompt",
+      "End: Update with comprehensive summary + specific next steps"
+    ],
+    "breadcrumb": "<file>: do <step>; then <step>. Acceptance: <result>. Context: <why>.",
+    "statuses": "planned → in_progress → done|blocked|superseded",
+    "json_fields": "id, title, parent_id, summary, next_prompt, status, files[], children[], kind (super|feature|task), created_at, updated_at",
+    "required_flags": {
+      "new": "title required; --summary, --next optional but recommended",
+      "update": "id required; --summary, --next recommended; --status defaults to in_progress"
+    }
+  },
+  "etag": "quickstart:v2",
+  "lastUpdated": "2025-01-21T00:00:00Z",
+  "schemaVersion": 2
+}

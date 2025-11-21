@@ -57,3 +57,48 @@ export interface RecentErrorsOptions {
   maxLimit: number;
   logPath: string;
 }
+
+export interface QuickstartPayload {
+  commands: {
+    init: string;
+    new: string;
+    update: string;
+    status: string;
+  };
+  session_pattern: string[];
+  breadcrumb: string;
+  statuses: string;
+  json_fields: string;
+  required_flags: {
+    new: string;
+    update: string;
+  };
+}
+
+export interface RecipeDescriptor {
+  name: string;
+  jq: string;
+  description: string;
+}
+
+export interface RecipesPayload {
+  recipes: RecipeDescriptor[];
+}
+
+export interface TrackWithDetails {
+  id: string;
+  title: string;
+  parent_id: string | null;
+  summary: string;
+  next_prompt: string;
+  status: string;
+  files: string[];
+  children: string[];
+  kind: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TracksPayload {
+  tracks: TrackWithDetails[];
+}

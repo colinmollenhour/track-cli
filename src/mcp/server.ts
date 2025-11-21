@@ -1,12 +1,14 @@
 import http from 'node:http';
 import { Buffer } from 'node:buffer';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { URL, fileURLToPath } from 'node:url';
+import { TrackManager } from '../lib/index.js';
 import {
-  CommandsPayload,
   Envelope,
-  ExamplesPayload,
+  QuickstartPayload,
+  RecipesPayload,
+  TracksPayload,
   RecentErrorsOptions,
   RecentErrorsPayload,
   StatePayload,
@@ -22,8 +24,8 @@ import {
 } from './constants.js';
 
 type EnvelopeMap = {
-  commands: Envelope<CommandsPayload>;
-  examples: Envelope<ExamplesPayload>;
+  quickstart: Envelope<QuickstartPayload>;
+  recipes: Envelope<RecipesPayload>;
   state: Envelope<StatePayload>;
   version: Envelope<{ cli: string; schema: number }>;
 };
@@ -38,8 +40,8 @@ function loadEnvelope<T>(relativePath: string): Envelope<T> {
 }
 
 const envelopes: EnvelopeMap = {
-  commands: loadEnvelope<CommandsPayload>('./data/commands.json'),
-  examples: loadEnvelope<ExamplesPayload>('./data/examples.json'),
+  quickstart: loadEnvelope<QuickstartPayload>('./data/quickstart.json'),
+  recipes: loadEnvelope<RecipesPayload>('./data/recipes.json'),
   state: loadEnvelope<StatePayload>('./data/state.json'),
   version: loadEnvelope<{ cli: string; schema: number }>('./data/version.json'),
 };
@@ -131,13 +133,13 @@ function notFound(res: http.ServerResponse, detail: string): void {
   sendJson(res, 404, { error: detail });
 }
 
-function handleCommands(res: http.ServerResponse): void {
-  const envelope = envelopes.commands;
+function handleQuickstart(res: http.ServerResponse): void {
+  const envelope = envelopes.quickstart;
   sendJson(res, 200, envelope, envelope.etag, envelope.lastUpdated);
 }
 
-function handleExamples(res: http.ServerResponse): void {
-  const envelope = envelopes.examples;
+function handleRecipes(res: http.ServerResponse): void {
+  const envelope = envelopes.recipes;
   sendJson(res, 200, envelope, envelope.etag, envelope.lastUpdated);
 }
 
@@ -157,47 +159,57 @@ function handleState(res: http.ServerResponse): void {
   sendJson(res, 200, envelope, envelope.etag, envelope.lastUpdated);
 }
 
-function handleHelp(res: http.ServerResponse, command: string): void {
-  const envelope = envelopes.commands;
-  const found = envelope.data.commands.find((item) => item.name === command);
-
-  if (!found) {
-    notFound(res, `Unknown command "${command}"`);
-    return;
-  }
-
-  const response: Envelope<{ command: typeof found }> = {
-    data: { command: found },
-    etag: `${envelope.etag}:${command}`,
-    lastUpdated: envelope.lastUpdated,
-    schemaVersion: envelope.schemaVersion,
-  };
-
-  sendJson(res, 200, response, response.etag, response.lastUpdated);
-}
-
-function handleExample(res: http.ServerResponse, command: string): void {
-  const envelope = envelopes.examples;
-  const found = envelope.data.examples.find((item) => item.name === command);
-
-  if (!found) {
-    notFound(res, `Unknown command "${command}"`);
-    return;
-  }
-
-  const response: Envelope<{ example: typeof found }> = {
-    data: { example: found },
-    etag: `${envelope.etag}:${command}`,
-    lastUpdated: envelope.lastUpdated,
-    schemaVersion: envelope.schemaVersion,
-  };
-
-  sendJson(res, 200, response, response.etag, response.lastUpdated);
-}
-
 function handleRecentErrors(res: http.ServerResponse, url: URL): void {
   const envelope = buildRecentErrorsEnvelope(url);
   sendJson(res, 200, envelope, envelope.etag, envelope.lastUpdated);
+}
+
+function handleStatus(res: http.ServerResponse, url: URL): void {
+  const dbPath = resolve(process.cwd(), '.track/track.db');
+
+  if (!existsSync(dbPath)) {
+    sendJson(res, 404, { error: 'No track database found in current directory' });
+    return;
+  }
+
+  try {
+    const manager = new TrackManager(dbPath);
+    const { tracks } = manager.getStatus();
+
+    // Optional filtering
+    const statusFilter = url.searchParams.get('status');
+    const kindFilter = url.searchParams.get('kind');
+    const parentFilter = url.searchParams.get('parent');
+
+    let filtered = tracks;
+
+    if (statusFilter) {
+      const statuses = statusFilter.split(',');
+      filtered = filtered.filter((t) => statuses.includes(t.status));
+    }
+
+    if (kindFilter) {
+      const kinds = kindFilter.split(',');
+      filtered = filtered.filter((t) => kinds.includes(t.kind));
+    }
+
+    if (parentFilter) {
+      filtered = filtered.filter((t) => t.parent_id === parentFilter);
+    }
+
+    const now = new Date().toISOString();
+    const envelope: Envelope<TracksPayload> = {
+      data: { tracks: filtered },
+      etag: `status:${tracks.length}:${Date.now()}`,
+      lastUpdated: now,
+      schemaVersion: envelopes.version.data.schema,
+    };
+
+    sendJson(res, 200, envelope, envelope.etag, envelope.lastUpdated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    sendJson(res, 500, { error: `Failed to read track status: ${message}` });
+  }
 }
 
 function route(req: http.IncomingMessage, res: http.ServerResponse): void {
@@ -209,13 +221,18 @@ function route(req: http.IncomingMessage, res: http.ServerResponse): void {
   const url = new URL(req.url, 'http://localhost');
   const pathname = url.pathname;
 
-  if (pathname === `${PATH_PREFIX}/commands`) {
-    handleCommands(res);
+  if (pathname === `${PATH_PREFIX}/quickstart`) {
+    handleQuickstart(res);
     return;
   }
 
-  if (pathname === `${PATH_PREFIX}/examples`) {
-    handleExamples(res);
+  if (pathname === `${PATH_PREFIX}/recipes`) {
+    handleRecipes(res);
+    return;
+  }
+
+  if (pathname === `${PATH_PREFIX}/status`) {
+    handleStatus(res, url);
     return;
   }
 
@@ -226,26 +243,6 @@ function route(req: http.IncomingMessage, res: http.ServerResponse): void {
 
   if (pathname === `${PATH_PREFIX}/state`) {
     handleState(res);
-    return;
-  }
-
-  if (pathname.startsWith(`${PATH_PREFIX}/help/`)) {
-    const command = pathname.replace(`${PATH_PREFIX}/help/`, '');
-    if (!command || command.includes('/')) {
-      notFound(res, 'Invalid command name');
-      return;
-    }
-    handleHelp(res, command);
-    return;
-  }
-
-  if (pathname.startsWith(`${PATH_PREFIX}/example/`)) {
-    const command = pathname.replace(`${PATH_PREFIX}/example/`, '');
-    if (!command || command.includes('/')) {
-      notFound(res, 'Invalid command name');
-      return;
-    }
-    handleExample(res, command);
     return;
   }
 

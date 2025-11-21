@@ -1,9 +1,9 @@
 {
   "data": {
     "cli": "track-cli 0.1.0",
-    "schema": 1
+    "schema": 2
   },
-  "lastUpdated": "2025-11-21T15:12:42.009Z",
-  "schemaVersion": 1,
-  "etag": "84632f552cd0"
+  "lastUpdated": "2025-11-21T21:20:07.453Z",
+  "schemaVersion": 2,
+  "etag": "2bf21bd017f3"
 }

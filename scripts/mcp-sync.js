@@ -9,7 +9,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { commandMetadata } from '../dist/commands/metadata.js';
 import { SCHEMA_VERSION } from '../dist/mcp/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,30 +46,17 @@ async function writeEnvelope(filename, envelopeJson) {
 async function main() {
   const pkgRaw = await readFile(resolve(ROOT, 'package.json'), 'utf8');
   const pkg = JSON.parse(pkgRaw);
-  const commandsPayload = {
-    commands: commandMetadata.map((cmd) => ({
-      name: cmd.name,
-      summary: cmd.summary,
-      args: cmd.args,
-      usage: cmd.usage,
-      flags: cmd.flags.map(({ cliFlag, ...mcpFlag }) => mcpFlag),
-    })),
-  };
-  const examplesPayload = {
-    examples: commandMetadata.map(({ name, example }) => ({ name, example })),
-  };
+
   const versionPayload = { cli: `track-cli ${pkg.version}`, schema: SCHEMA_VERSION };
   const statePayload = { cwd: '', defaultConfig: '.track/config.json' };
 
-  const { envelope: commandsEnv } = makeEnvelope(commandsPayload);
-  const { envelope: examplesEnv } = makeEnvelope(examplesPayload);
   const { envelope: versionEnv } = makeEnvelope(versionPayload);
   const { envelope: stateEnv } = makeEnvelope(statePayload);
 
-  await writeEnvelope('commands.json', JSON.stringify(commandsEnv, null, 2));
-  await writeEnvelope('examples.json', JSON.stringify(examplesEnv, null, 2));
   await writeEnvelope('version.json', JSON.stringify(versionEnv, null, 2));
   await writeEnvelope('state.json', JSON.stringify(stateEnv, null, 2));
+
+  console.log('Note: quickstart.json and recipes.json are maintained as static files');
 }
 
 main().catch((error) => {
