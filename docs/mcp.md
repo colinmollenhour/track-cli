@@ -23,6 +23,8 @@ All responses share envelope fields: `data`, `lastUpdated`, `schemaVersion`, `et
 - `npm run mcp:start` — start compiled server from `dist`.
 - `npm run mcp:dev` — dev compile watch (server not auto-run).
 
+Metadata source of truth lives in `src/commands/metadata.ts`. This feeds both the CLI (Commander wiring) and MCP outputs; update it when commands/flags change, then run `npm run mcp:sync`.
+
 ## Data Regeneration
 `scripts/mcp-sync.js` is the single source of truth for command metadata. Update it when commands/flags change, then run `npm run mcp:sync` to refresh envelopes and `dist` artifacts.
 
