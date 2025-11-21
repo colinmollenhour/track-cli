@@ -1,6 +1,3 @@
-export const DEFAULT_SCHEMA_VERSION = 1;
-export const MAX_PAYLOAD_BYTES = 5 * 1024; // 5KB cap to keep responses lightweight for agents
-
 export interface Envelope<T> {
   data: T;
   lastUpdated: string;

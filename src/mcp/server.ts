@@ -7,16 +7,19 @@ import {
   CommandsPayload,
   Envelope,
   ExamplesPayload,
-  MAX_PAYLOAD_BYTES,
   RecentErrorsOptions,
   RecentErrorsPayload,
   StatePayload,
 } from './types.js';
-
-const PATH_PREFIX = '/mcp/track';
-const DEFAULT_PORT = 8765;
-const DEFAULT_MAX_RECENT_ERRORS = 20;
-const DEFAULT_HOST = '127.0.0.1';
+import {
+  DEFAULT_ERRORS_LOG_PATH,
+  DEFAULT_HOST,
+  DEFAULT_MAX_RECENT_ERRORS,
+  DEFAULT_PORT,
+  DEFAULT_RECENT_ERRORS_LIMIT,
+  MAX_PAYLOAD_BYTES,
+  PATH_PREFIX,
+} from './constants.js';
 
 type EnvelopeMap = {
   commands: Envelope<CommandsPayload>;
@@ -45,9 +48,11 @@ function getRecentErrorsOptions(url: URL): RecentErrorsOptions {
   const requestedLimit = Number.parseInt(url.searchParams.get('limit') ?? '', 10);
   const maxLimit = DEFAULT_MAX_RECENT_ERRORS;
   const limit =
-    Number.isNaN(requestedLimit) || requestedLimit <= 0 ? 5 : Math.min(requestedLimit, maxLimit);
+    Number.isNaN(requestedLimit) || requestedLimit <= 0
+      ? DEFAULT_RECENT_ERRORS_LIMIT
+      : Math.min(requestedLimit, maxLimit);
 
-  const logPath = process.env.MCP_ERRORS_FILE ?? '.track/mcp-errors.log';
+  const logPath = process.env.MCP_ERRORS_FILE ?? DEFAULT_ERRORS_LOG_PATH;
 
   return { limit, maxLimit, logPath };
 }
@@ -226,12 +231,20 @@ function route(req: http.IncomingMessage, res: http.ServerResponse): void {
 
   if (pathname.startsWith(`${PATH_PREFIX}/help/`)) {
     const command = pathname.replace(`${PATH_PREFIX}/help/`, '');
+    if (!command || command.includes('/')) {
+      notFound(res, 'Invalid command name');
+      return;
+    }
     handleHelp(res, command);
     return;
   }
 
   if (pathname.startsWith(`${PATH_PREFIX}/example/`)) {
     const command = pathname.replace(`${PATH_PREFIX}/example/`, '');
+    if (!command || command.includes('/')) {
+      notFound(res, 'Invalid command name');
+      return;
+    }
     handleExample(res, command);
     return;
   }
@@ -277,6 +290,17 @@ export function handleRequest(url: string): {
 }
 
 export function startServer(port = DEFAULT_PORT, host = DEFAULT_HOST): http.Server {
+  // Security warning for non-localhost binding
+  const isLocalhost = host === '127.0.0.1' || host === 'localhost' || host === '::1';
+  if (!isLocalhost) {
+    console.warn(
+      `\n⚠️  WARNING: MCP server is binding to ${host}, which may expose it to external networks.`
+    );
+    console.warn(
+      `   For security, consider using 127.0.0.1 (localhost) unless you have a specific need.\n`
+    );
+  }
+
   const server = http.createServer(route);
   server.listen(port, host, () => {
     console.log(`MCP server listening on http://${host}:${port}${PATH_PREFIX}`);

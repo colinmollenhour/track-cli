@@ -10,12 +10,12 @@ import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { commandMetadata } from '../dist/commands/metadata.js';
+import { SCHEMA_VERSION } from '../dist/mcp/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT = resolve(__dirname, '..');
 const DATA_DIR = resolve(ROOT, 'src/mcp/data');
-const SCHEMA_VERSION = 1;
 
 function hashObject(obj) {
   const json = JSON.stringify(obj);
@@ -53,11 +53,7 @@ async function main() {
       summary: cmd.summary,
       args: cmd.args,
       usage: cmd.usage,
-      flags: cmd.flags.map((flag) => {
-        const { cliFlag, ...flagRest } = flag;
-        void cliFlag;
-        return flagRest;
-      }),
+      flags: cmd.flags.map(({ cliFlag, ...mcpFlag }) => mcpFlag),
     })),
   };
   const examplesPayload = {
