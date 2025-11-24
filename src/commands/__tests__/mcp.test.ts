@@ -99,9 +99,7 @@ describe('mcp command', () => {
         mcpStartCommand({});
 
         expect(startServerSpy).toHaveBeenCalledWith(8765, '127.0.0.1');
-        expect(consoleMock.getLogs().some((log) => log.includes('Starting MCP server'))).toBe(
-          true
-        );
+        expect(consoleMock.getLogs().some((log) => log.includes('Starting MCP server'))).toBe(true);
       });
     });
 
