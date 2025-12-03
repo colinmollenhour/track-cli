@@ -243,6 +243,7 @@ track mcp start --port 8877
 ```
 
 **Configure Claude Code (`~/.claude.json`):**
+
 ```json
 {
   "mcpServers": {
@@ -255,6 +256,7 @@ track mcp start --port 8877
 ```
 
 **Configure Codex (`~/.codex/config.toml`):**
+
 ```toml
 [mcp.track-cli]
 command = "track"
@@ -348,7 +350,6 @@ Track CLI follows a layered architecture with clean separation of concerns:
 - **Storage**: SQLite operations (CRUD, queries)
 - **Commands**: CLI command handlers
 
-
 ### Design Principles
 
 - **KISS**: Keep it simple—favor straightforward solutions
@@ -357,8 +358,7 @@ Track CLI follows a layered architecture with clean separation of concerns:
 
 ## Testing
 
-- **106 automated tests** covering all layers
-- **91.7% overall coverage** (100% on utils, models, storage)
+- Tests covering all layers
 - Vitest with isolated test databases
 - Comprehensive validation of error paths and edge cases
 
@@ -397,6 +397,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for dev
 
 Built with:
 
+- [Claude Code](https://code.claude.com/docs/en/overview) - Agentic coding tool
 - [Commander.js](https://github.com/tj/commander.js) - CLI framework
 - [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) - SQLite bindings
 - [nanoid](https://github.com/ai/nanoid) - ID generation
