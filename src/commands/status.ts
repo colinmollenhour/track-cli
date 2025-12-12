@@ -3,7 +3,7 @@ import * as lib from '../lib/db.js';
 import { buildTrackTree } from '../models/tree.js';
 import { ACTIVE_STATUSES } from '../models/types.js';
 import type { TrackWithDetails } from '../models/types.js';
-import { TREE, colorKind, colorStatus, formatLabel } from '../utils/format.js';
+import { TREE, colorKind, colorStatus, formatLabel, getTerminalWidth } from '../utils/format.js';
 
 /**
  * Options for the status command.
@@ -92,12 +92,15 @@ function outputHuman(tracks: TrackWithDetails[]): void {
     trackMap.set(track.id, track);
   }
 
+  // Get terminal width once for the entire output
+  const terminalWidth = getTerminalWidth();
+
   // Print project header
   console.log(`Project: ${rootTrack.title} (${rootTrack.id})`);
   console.log();
 
   // Print tree starting from root
-  printTrack(rootTrack, trackMap, [], true);
+  printTrack(rootTrack, trackMap, [], true, terminalWidth);
 }
 
 /**
@@ -105,25 +108,36 @@ function outputHuman(tracks: TrackWithDetails[]): void {
  *
  * @param track - Track to print
  * @param trackMap - Map of all tracks for child lookup
- * @param depth - Current depth in tree (for indentation)
+ * @param prefixParts - Prefix parts for tree rendering
+ * @param isLast - Whether this is the last child
+ * @param terminalWidth - Terminal width for text wrapping
  */
 function printTrack(
   track: TrackWithDetails,
   trackMap: Map<string, TrackWithDetails>,
   prefixParts: string[],
-  isLast: boolean
+  isLast: boolean,
+  terminalWidth: number
 ): void {
   const nodePrefix = prefixParts.join('') + (isLast ? TREE.LAST : TREE.BRANCH) + ' ';
   const detailsPrefix = prefixParts.join('') + (isLast ? TREE.SPACE : TREE.PIPE) + '  ';
 
+  // Calculate available width for label content
+  const prefixVisualWidth = detailsPrefix.length;
+  const labelOptions = {
+    labelWidth: 8,
+    maxWidth: terminalWidth - prefixVisualWidth,
+    continuationIndent: detailsPrefix,
+  };
+
   console.log(`${nodePrefix}[${colorKind(track.kind)}] ${track.id} - ${track.title}`);
 
-  console.log(`${detailsPrefix}${formatLabel('summary:', track.summary)}`);
-  console.log(`${detailsPrefix}${formatLabel('next:', track.next_prompt)}`);
-  console.log(`${detailsPrefix}${formatLabel('status:', colorStatus(track.status))}`);
+  console.log(`${detailsPrefix}${formatLabel('summary:', track.summary, labelOptions)}`);
+  console.log(`${detailsPrefix}${formatLabel('next:', track.next_prompt, labelOptions)}`);
+  console.log(`${detailsPrefix}${formatLabel('status:', colorStatus(track.status), labelOptions)}`);
 
   if (track.files.length > 0) {
-    console.log(`${detailsPrefix}${formatLabel('files:', track.files.join(', '))}`);
+    console.log(`${detailsPrefix}${formatLabel('files:', track.files.join(', '), labelOptions)}`);
   }
 
   const children = track.children.filter(Boolean);
@@ -140,7 +154,7 @@ function printTrack(
     const childIsLast = i === children.length - 1;
     const childPrefixParts = [...prefixParts, isLast ? TREE.SPACE : TREE.PIPE];
 
-    printTrack(child, trackMap, childPrefixParts, childIsLast);
+    printTrack(child, trackMap, childPrefixParts, childIsLast, terminalWidth);
     if (i < children.length - 1) {
       console.log();
     }

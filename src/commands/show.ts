@@ -2,7 +2,7 @@ import { projectExists, getDatabasePath } from '../utils/paths.js';
 import * as lib from '../lib/db.js';
 import { buildTrackTree } from '../models/tree.js';
 import type { TrackWithDetails } from '../models/types.js';
-import { colorKind, colorStatus, formatLabel } from '../utils/format.js';
+import { colorKind, colorStatus, formatLabel, getTerminalWidth } from '../utils/format.js';
 
 /**
  * Options for the show command.
@@ -72,16 +72,24 @@ function outputJson(track: TrackWithDetails): void {
  * Output track in human-readable format.
  */
 function outputHuman(track: TrackWithDetails): void {
+  const terminalWidth = getTerminalWidth();
+  const indent = '  ';
+
+  const labelOptions = {
+    labelWidth: 8,
+    maxWidth: terminalWidth - indent.length,
+    continuationIndent: indent,
+  };
+
   // Print track header: [kind] id - title
   console.log(`[${colorKind(track.kind)}] ${track.id} - ${track.title}`);
 
   // Print track details with indentation
-  const indent = '  ';
-  console.log(`${indent}${formatLabel('summary:', track.summary)}`);
-  console.log(`${indent}${formatLabel('next:', track.next_prompt)}`);
-  console.log(`${indent}${formatLabel('status:', colorStatus(track.status))}`);
+  console.log(`${indent}${formatLabel('summary:', track.summary, labelOptions)}`);
+  console.log(`${indent}${formatLabel('next:', track.next_prompt, labelOptions)}`);
+  console.log(`${indent}${formatLabel('status:', colorStatus(track.status), labelOptions)}`);
 
   if (track.files.length > 0) {
-    console.log(`${indent}${formatLabel('files:', track.files.join(', '))}`);
+    console.log(`${indent}${formatLabel('files:', track.files.join(', '), labelOptions)}`);
   }
 }
