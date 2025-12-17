@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { fetchStatus, createTrack, updateTrack } from './api';
 import type { TrackWithDetails, CreateTrackParams, UpdateTrackParams, Status } from './api';
 import TrackTree from './components/TrackTree.vue';
 import TrackForm from './components/TrackForm.vue';
+
+// Auto-refresh configuration
+const AUTO_REFRESH_INTERVAL_MS = 5000; // 5 seconds
 
 const tracks = ref<TrackWithDetails[]>([]);
 
@@ -21,6 +24,10 @@ const newTrackParentId = ref<string | null>(null);
 const statusFilters = ref<Set<Status>>(new Set(['planned', 'in_progress', 'blocked']));
 const expandedIds = ref<Set<string>>(new Set());
 
+// Auto-refresh state
+const autoRefresh = ref(false);
+const refreshIntervalId = ref<ReturnType<typeof setInterval> | null>(null);
+
 async function loadTracks() {
   try {
     loading.value = true;
@@ -31,6 +38,43 @@ async function loadTracks() {
     error.value = e instanceof Error ? e.message : 'Failed to load tracks';
   } finally {
     loading.value = false;
+  }
+}
+
+// Auto-refresh functions
+function startAutoRefresh() {
+  if (refreshIntervalId.value) return;
+  refreshIntervalId.value = setInterval(() => {
+    if (!document.hidden) {
+      loadTracks();
+    }
+  }, AUTO_REFRESH_INTERVAL_MS);
+}
+
+function stopAutoRefresh() {
+  if (refreshIntervalId.value) {
+    clearInterval(refreshIntervalId.value);
+    refreshIntervalId.value = null;
+  }
+}
+
+function toggleAutoRefresh() {
+  autoRefresh.value = !autoRefresh.value;
+  if (autoRefresh.value) {
+    startAutoRefresh();
+  } else {
+    stopAutoRefresh();
+  }
+}
+
+// Visibility API: pause/resume auto-refresh when tab visibility changes
+function handleVisibilityChange() {
+  if (!autoRefresh.value) return;
+  if (document.hidden) {
+    stopAutoRefresh();
+  } else {
+    loadTracks(); // Refresh immediately when tab becomes visible
+    startAutoRefresh();
   }
 }
 
@@ -86,6 +130,12 @@ async function handleFormSubmit(data: {
 
 onMounted(() => {
   loadTracks();
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+});
+
+onUnmounted(() => {
+  stopAutoRefresh();
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 </script>
 
@@ -117,6 +167,18 @@ onMounted(() => {
       >
         {{ loading ? 'Loading...' : 'Refresh' }}
       </button>
+      <label class="flex items-center gap-2 text-gray-600 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          :checked="autoRefresh"
+          @change="toggleAutoRefresh"
+          class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        <span>Auto-refresh</span>
+        <span v-if="autoRefresh" class="inline-flex items-center">
+          <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+        </span>
+      </label>
     </div>
 
     <!-- Track tree (state lifted to App.vue to persist across refreshes) -->
