@@ -81,13 +81,18 @@ function outputHuman(track: TrackWithDetails): void {
     continuationIndent: indent,
   };
 
-  // Print track header: [kind] id - title
-  console.log(`[${colorKind(track.kind)}] ${track.id} - ${track.title}`);
+  // Print track header: [kind] id - title @worktree
+  const worktreeSuffix = track.worktree ? ` @${track.worktree}` : '';
+  console.log(`[${colorKind(track.kind)}] ${track.id} - ${track.title}${worktreeSuffix}`);
 
   // Print track details with indentation
   console.log(`${indent}${formatLabel('summary:', track.summary, labelOptions)}`);
   console.log(`${indent}${formatLabel('next:', track.next_prompt, labelOptions)}`);
   console.log(`${indent}${formatLabel('status:', colorStatus(track.status), labelOptions)}`);
+
+  if (track.worktree) {
+    console.log(`${indent}${formatLabel('worktree:', track.worktree, labelOptions)}`);
+  }
 
   if (track.files.length > 0) {
     console.log(`${indent}${formatLabel('files:', track.files.join(', '), labelOptions)}`);

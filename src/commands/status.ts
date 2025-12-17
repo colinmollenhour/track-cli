@@ -1,4 +1,4 @@
-import { projectExists, getDatabasePath } from '../utils/paths.js';
+import { projectExists, getDatabasePath, getCurrentWorktree } from '../utils/paths.js';
 import * as lib from '../lib/db.js';
 import { buildTrackTree } from '../models/tree.js';
 import { ACTIVE_STATUSES } from '../models/types.js';
@@ -11,6 +11,7 @@ import { TREE, colorKind, colorStatus, formatLabel, getTerminalWidth } from '../
 export interface StatusCommandOptions {
   json?: boolean;
   all?: boolean;
+  worktree?: string | boolean; // true means use current, string means specific name
 }
 
 /**
@@ -30,12 +31,33 @@ export function statusCommand(options: StatusCommandOptions): void {
   try {
     const dbPath = getDatabasePath();
 
-    // 2. Load tracks from database (filtered by default, all with --all flag)
+    // 2. Determine worktree filter
+    let worktreeFilter: string | null = null;
+    if (options.worktree !== undefined) {
+      if (options.worktree === true) {
+        // --worktree flag without value: use auto-detected current worktree
+        worktreeFilter = getCurrentWorktree();
+        if (!worktreeFilter) {
+          console.error('Error: Not in a git worktree. Use --worktree <name> to filter by name.');
+          process.exit(1);
+        }
+      } else if (typeof options.worktree === 'string') {
+        // --worktree <name>: use specified worktree
+        worktreeFilter = options.worktree;
+      }
+    }
+
+    // 3. Load tracks from database (filtered by default, all with --all flag)
     let tracks = options.all
       ? lib.getAllTracks(dbPath)
       : lib.getTracksByStatus(dbPath, ACTIVE_STATUSES);
 
-    // 3. Always include root track for project context, even if filtered
+    // 4. Apply worktree filter if specified
+    if (worktreeFilter) {
+      tracks = tracks.filter((t) => t.worktree === worktreeFilter);
+    }
+
+    // 5. Always include root track for project context, even if filtered
     if (!options.all) {
       const rootTrack = lib.getRootTrack(dbPath);
       if (rootTrack && !tracks.find((t) => t.id === rootTrack.id)) {
@@ -43,13 +65,13 @@ export function statusCommand(options: StatusCommandOptions): void {
       }
     }
 
-    // 4. Load all track-file associations
+    // 6. Load all track-file associations
     const fileMap = lib.getAllTrackFiles(dbPath);
 
-    // 5. Build tree structure with derived fields
+    // 7. Build tree structure with derived fields
     const tracksWithDetails = buildTrackTree(tracks, fileMap);
 
-    // 6. Output in requested format
+    // 8. Output in requested format
     if (options.json) {
       outputJson(tracksWithDetails);
     } else {
@@ -130,7 +152,10 @@ function printTrack(
     continuationIndent: detailsPrefix,
   };
 
-  console.log(`${nodePrefix}[${colorKind(track.kind)}] ${track.id} - ${track.title}`);
+  const worktreeSuffix = track.worktree ? ` @${track.worktree}` : '';
+  console.log(
+    `${nodePrefix}[${colorKind(track.kind)}] ${track.id} - ${track.title}${worktreeSuffix}`
+  );
 
   console.log(`${detailsPrefix}${formatLabel('summary:', track.summary, labelOptions)}`);
   console.log(`${detailsPrefix}${formatLabel('next:', track.next_prompt, labelOptions)}`);

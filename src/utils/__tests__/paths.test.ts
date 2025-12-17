@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { getTrackDir, getDatabasePath, projectExists } from '../paths.js';
+import {
+  getTrackDir,
+  getDatabasePath,
+  projectExists,
+  getProjectRoot,
+  getCurrentWorktree,
+} from '../paths.js';
 import { withTempDir, createTrackDir } from '../../__tests__/helpers/test-fs.js';
 import path from 'path';
 
@@ -37,6 +43,41 @@ describe('paths utilities', () => {
       await withTempDir((tempDir) => {
         createTrackDir(tempDir);
         expect(projectExists()).toBe(true);
+      });
+    });
+  });
+
+  describe('getProjectRoot', () => {
+    it('should return current directory when not in a git repo', async () => {
+      await withTempDir((tempDir) => {
+        // In a temp dir with no .git, should return cwd
+        const root = getProjectRoot();
+        expect(root).toBe(tempDir);
+      });
+    });
+
+    it('should return a valid path', async () => {
+      await withTempDir(() => {
+        const root = getProjectRoot();
+        expect(typeof root).toBe('string');
+        expect(root.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('getCurrentWorktree', () => {
+    it('should return null when not in a git repo', async () => {
+      await withTempDir(() => {
+        // In a temp dir with no .git, should return null
+        const worktree = getCurrentWorktree();
+        expect(worktree).toBeNull();
+      });
+    });
+
+    it('should return string or null', async () => {
+      await withTempDir(() => {
+        const worktree = getCurrentWorktree();
+        expect(worktree === null || typeof worktree === 'string').toBe(true);
       });
     });
   });

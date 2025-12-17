@@ -441,4 +441,111 @@ describe('show command', () => {
       });
     });
   });
+
+  describe('worktree display', () => {
+    it('should include worktree in JSON output', async () => {
+      await withTempDir(() => {
+        initCommand('Test Project');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        newCommand('Feature Track', {
+          summary: 'Feature summary',
+          next: 'Next',
+          worktree: 'feature-branch',
+        });
+
+        const trackId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        showCommand(trackId, { json: true });
+
+        const logs = consoleMock.getLogs();
+        const output = JSON.parse(logs.join('\n'));
+
+        expect(output.worktree).toBe('feature-branch');
+      });
+    });
+
+    it('should display worktree in human output when present', async () => {
+      await withTempDir(() => {
+        initCommand('Test Project');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        newCommand('Feature Track', {
+          summary: 'Feature summary',
+          next: 'Next',
+          worktree: 'feature-branch',
+        });
+
+        const trackId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        showCommand(trackId, { json: false });
+
+        const logs = consoleMock.getLogs();
+        const output = logs.join('\n');
+
+        // Should display worktree label and value
+        expect(output).toContain('worktree:');
+        expect(output).toContain('feature-branch');
+        // Should also display @suffix in title
+        expect(output).toContain('@feature-branch');
+      });
+    });
+
+    it('should not display worktree line when not set', async () => {
+      await withTempDir(() => {
+        initCommand('Test Project');
+        const root = lib.getRootTrack(getDatabasePath());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        showCommand(root!.id, { json: false });
+
+        const logs = consoleMock.getLogs();
+        const output = logs.join('\n');
+
+        // Should not display worktree label when null
+        expect(output).not.toContain('worktree:');
+      });
+    });
+
+    it('should show null worktree in JSON for tracks without worktree', async () => {
+      await withTempDir(() => {
+        initCommand('Test Project');
+        const root = lib.getRootTrack(getDatabasePath());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        showCommand(root!.id, { json: true });
+
+        const logs = consoleMock.getLogs();
+        const output = JSON.parse(logs.join('\n'));
+
+        expect(output.worktree).toBeNull();
+      });
+    });
+  });
 });

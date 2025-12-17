@@ -400,4 +400,118 @@ describe('update command', () => {
       });
     });
   });
+
+  describe('worktree support', () => {
+    it('should update worktree when --worktree is provided', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        newCommand('Test Track', {
+          summary: 'Summary',
+          next: 'Next',
+        });
+
+        const trackId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        updateCommand(trackId, {
+          summary: 'Updated',
+          next: 'Next',
+          worktree: 'feature-branch',
+        });
+
+        const track = lib.getTrack(getDatabasePath(), trackId);
+        expect(track?.worktree).toBe('feature-branch');
+
+        const logs = consoleMock.getLogs();
+        expect(logs.some((log) => log.includes('Worktree: feature-branch'))).toBe(true);
+      });
+    });
+
+    it('should unset worktree when --worktree - is provided', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create track with worktree
+        newCommand('Test Track', {
+          summary: 'Summary',
+          next: 'Next',
+          worktree: 'feature-branch',
+        });
+
+        const trackId = extractTrackId(consoleMock.getLogs());
+
+        // Verify worktree is set
+        let track = lib.getTrack(getDatabasePath(), trackId);
+        expect(track?.worktree).toBe('feature-branch');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Unset worktree with '-'
+        updateCommand(trackId, {
+          summary: 'Updated',
+          next: 'Next',
+          worktree: '-',
+        });
+
+        track = lib.getTrack(getDatabasePath(), trackId);
+        expect(track?.worktree).toBeNull();
+
+        const logs = consoleMock.getLogs();
+        expect(logs.some((log) => log.includes('Worktree: (unset)'))).toBe(true);
+      });
+    });
+
+    it('should not change worktree when --worktree is not provided', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create track with worktree
+        newCommand('Test Track', {
+          summary: 'Summary',
+          next: 'Next',
+          worktree: 'feature-branch',
+        });
+
+        const trackId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Update without --worktree flag
+        updateCommand(trackId, {
+          summary: 'Updated',
+          next: 'Next',
+        });
+
+        // Worktree should remain unchanged
+        const track = lib.getTrack(getDatabasePath(), trackId);
+        expect(track?.worktree).toBe('feature-branch');
+      });
+    });
+  });
 });

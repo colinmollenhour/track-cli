@@ -205,6 +205,37 @@ track update abc12345 --file src/api/auth.ts
 
 File associations are **idempotent**—adding the same file twice won't create duplicates.
 
+## Git Worktree Support
+
+Track CLI supports parallel development across git worktrees. When working in a worktree, tracks are automatically tagged with the worktree name.
+
+```bash
+# In a worktree, tracks are auto-tagged
+cd ~/projects/my-app-feature
+track new "Feature Work" --summary "Working on feature"
+# Output includes: Worktree: my-app-feature
+
+# Filter status to current worktree
+track status --worktree              # Uses auto-detected worktree
+track status -w                       # Short form
+track status --worktree my-feature    # Filter by specific name
+
+# Explicitly set worktree
+track new "Task" --worktree custom-name
+
+# Unset worktree
+track update abc123 --worktree -
+```
+
+**How it works:**
+- The `.track/` database lives in the main repo root
+- All worktrees share the same database
+- Tracks display `@worktree-name` suffix in output
+- Child tracks inherit parent's worktree by default
+- Use `--worktree` flag to filter or override
+
+See [Worktree Workflow Example](examples/worktree-workflow.md) for a complete guide.
+
 ## AI Agent Usage
 
 Track CLI is optimized for AI agents and LLMs working across sessions. Multiple integration methods available:
@@ -334,6 +365,7 @@ track update <id> \
 - [Usage Guide](docs/usage.md) - Comprehensive tutorials and workflows
 - [Command Reference](docs/commands.md) - Quick lookup for all commands
 - [AI Agent Integration](docs/AGENTS.md) - Patterns for AI agent usage
+- [Git Worktree Workflow](examples/worktree-workflow.md) - Parallel development with worktrees
 - [Examples](examples/) - Real-world workflow examples
 
 ## Development

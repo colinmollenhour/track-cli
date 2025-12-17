@@ -302,4 +302,142 @@ describe('new command', () => {
       });
     });
   });
+
+  describe('worktree support', () => {
+    it('should accept explicit --worktree flag', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        newCommand('Test Track', {
+          summary: 'Summary',
+          next: 'Next',
+          worktree: 'feature-branch',
+        });
+
+        const logs = consoleMock.getLogs();
+        const trackIdLog = logs.find((log) => log.includes('Track ID:'));
+        const trackId = trackIdLog?.split('Track ID: ')[1];
+
+        const track = lib.getTrack(getDatabasePath(), trackId!);
+        expect(track?.worktree).toBe('feature-branch');
+
+        // Check console output includes worktree
+        expect(logs.some((log) => log.includes('Worktree: feature-branch'))).toBe(true);
+      });
+    });
+
+    it('should store null worktree when not specified in non-git directory', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        newCommand('Test Track', {
+          summary: 'Summary',
+          next: 'Next',
+        });
+
+        const logs = consoleMock.getLogs();
+        const trackIdLog = logs.find((log) => log.includes('Track ID:'));
+        const trackId = trackIdLog?.split('Track ID: ')[1];
+
+        const track = lib.getTrack(getDatabasePath(), trackId!);
+        // In a non-git temp directory, worktree should be null
+        expect(track?.worktree).toBeNull();
+      });
+    });
+
+    it('should inherit worktree from parent', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create parent with worktree
+        newCommand('Parent Track', {
+          summary: 'Parent',
+          next: 'Next',
+          worktree: 'feature-x',
+        });
+
+        const parentLogs = consoleMock.getLogs();
+        const parentIdLog = parentLogs.find((log) => log.includes('Track ID:'));
+        const parentId = parentIdLog?.split('Track ID: ')[1];
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create child without explicit worktree
+        newCommand('Child Track', {
+          parent: parentId,
+          summary: 'Child',
+          next: 'Next',
+        });
+
+        const childLogs = consoleMock.getLogs();
+        const childIdLog = childLogs.find((log) => log.includes('Track ID:'));
+        const childId = childIdLog?.split('Track ID: ')[1];
+
+        const childTrack = lib.getTrack(getDatabasePath(), childId!);
+        // Child should inherit parent's worktree
+        expect(childTrack?.worktree).toBe('feature-x');
+      });
+    });
+
+    it('should allow explicit worktree to override parent inheritance', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create parent with worktree
+        newCommand('Parent Track', {
+          summary: 'Parent',
+          next: 'Next',
+          worktree: 'feature-x',
+        });
+
+        const parentLogs = consoleMock.getLogs();
+        const parentIdLog = parentLogs.find((log) => log.includes('Track ID:'));
+        const parentId = parentIdLog?.split('Track ID: ')[1];
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create child with different explicit worktree
+        newCommand('Child Track', {
+          parent: parentId,
+          summary: 'Child',
+          next: 'Next',
+          worktree: 'feature-y',
+        });
+
+        const childLogs = consoleMock.getLogs();
+        const childIdLog = childLogs.find((log) => log.includes('Track ID:'));
+        const childId = childIdLog?.split('Track ID: ')[1];
+
+        const childTrack = lib.getTrack(getDatabasePath(), childId!);
+        // Child should have its own worktree, not parent's
+        expect(childTrack?.worktree).toBe('feature-y');
+      });
+    });
+  });
 });

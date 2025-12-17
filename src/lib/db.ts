@@ -23,6 +23,7 @@ CREATE TABLE tracks (
   summary TEXT NOT NULL,
   next_prompt TEXT NOT NULL,
   status TEXT NOT NULL,
+  worktree TEXT DEFAULT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (parent_id) REFERENCES tracks(id)
@@ -60,6 +61,13 @@ CREATE INDEX idx_tracks_status ON tracks(status);
  */
 const CREATE_FILES_INDEX = `
 CREATE INDEX idx_track_files_track ON track_files(track_id);
+`;
+
+/**
+ * Index on tracks.worktree for efficient worktree filtering.
+ */
+const CREATE_WORKTREE_INDEX = `
+CREATE INDEX idx_tracks_worktree ON tracks(worktree);
 `;
 
 /**
@@ -104,6 +112,32 @@ export function initializeDatabase(dbPath: string): void {
     db.exec(CREATE_PARENT_INDEX);
     db.exec(CREATE_STATUS_INDEX);
     db.exec(CREATE_FILES_INDEX);
+    db.exec(CREATE_WORKTREE_INDEX);
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Migrate an existing database to add the worktree column if it doesn't exist.
+ * This is safe to call on databases that already have the column.
+ *
+ * @param dbPath - Path to the database file
+ */
+export function migrateDatabase(dbPath: string): void {
+  const db = new Database(dbPath);
+  try {
+    const columns = db.pragma('table_info(tracks)') as Array<{ name: string }>;
+    const hasWorktree = columns.some((col) => col.name === 'worktree');
+    if (!hasWorktree) {
+      db.exec('ALTER TABLE tracks ADD COLUMN worktree TEXT DEFAULT NULL');
+      // Check if the index exists before creating
+      const indices = db.pragma('index_list(tracks)') as Array<{ name: string }>;
+      const hasWorktreeIndex = indices.some((idx) => idx.name === 'idx_tracks_worktree');
+      if (!hasWorktreeIndex) {
+        db.exec(CREATE_WORKTREE_INDEX);
+      }
+    }
   } finally {
     db.close();
   }
@@ -120,9 +154,9 @@ export function createTrack(dbPath: string, params: CreateTrackParams): Track {
   return withDatabase(dbPath, (db) => {
     const stmt = db.prepare(`
       INSERT INTO tracks (
-        id, title, parent_id, summary, next_prompt, status, created_at, updated_at
+        id, title, parent_id, summary, next_prompt, status, worktree, created_at, updated_at
       ) VALUES (
-        @id, @title, @parent_id, @summary, @next_prompt, @status, @created_at, @updated_at
+        @id, @title, @parent_id, @summary, @next_prompt, @status, @worktree, @created_at, @updated_at
       )
     `);
 
@@ -170,12 +204,22 @@ export function getTrack(dbPath: string, trackId: string): Track | undefined {
  */
 export function updateTrack(dbPath: string, trackId: string, params: UpdateTrackParams): void {
   withDatabase(dbPath, (db) => {
+    // Build dynamic SET clause based on provided fields
+    const setClauses = [
+      'summary = @summary',
+      'next_prompt = @next_prompt',
+      'status = @status',
+      'updated_at = @updated_at',
+    ];
+
+    // Only include worktree in update if explicitly provided
+    if ('worktree' in params) {
+      setClauses.push('worktree = @worktree');
+    }
+
     const stmt = db.prepare(`
       UPDATE tracks
-      SET summary = @summary,
-          next_prompt = @next_prompt,
-          status = @status,
-          updated_at = @updated_at
+      SET ${setClauses.join(', ')}
       WHERE id = @id
     `);
 
@@ -279,5 +323,43 @@ export function getAllTrackFiles(dbPath: string): Map<string, string[]> {
     }
 
     return fileMap;
+  });
+}
+
+/**
+ * Get tracks filtered by worktree name.
+ * Uses the idx_tracks_worktree index for efficient filtering.
+ *
+ * @param dbPath - Path to the database file
+ * @param worktree - Worktree name to filter by
+ * @returns Array of tracks matching the given worktree
+ */
+export function getTracksByWorktree(dbPath: string, worktree: string): Track[] {
+  return withDatabase(dbPath, (db) => {
+    const stmt = db.prepare('SELECT * FROM tracks WHERE worktree = ?');
+    return stmt.all(worktree) as Track[];
+  });
+}
+
+/**
+ * Get tracks filtered by both status values and worktree.
+ * Combines idx_tracks_status and idx_tracks_worktree for efficient filtering.
+ *
+ * @param dbPath - Path to the database file
+ * @param statuses - Array of status values to filter by
+ * @param worktree - Worktree name to filter by
+ * @returns Array of tracks matching the given statuses and worktree
+ */
+export function getTracksByStatusAndWorktree(
+  dbPath: string,
+  statuses: readonly Status[],
+  worktree: string
+): Track[] {
+  return withDatabase(dbPath, (db) => {
+    const placeholders = statuses.map(() => '?').join(', ');
+    const stmt = db.prepare(
+      `SELECT * FROM tracks WHERE status IN (${placeholders}) AND worktree = ?`
+    );
+    return stmt.all(...statuses, worktree) as Track[];
   });
 }

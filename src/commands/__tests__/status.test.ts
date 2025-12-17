@@ -703,4 +703,134 @@ describe('status command', () => {
       });
     });
   });
+
+  describe('worktree filtering', () => {
+    it('should filter tracks by worktree name with --worktree <name>', async () => {
+      await withTempDir(() => {
+        initCommand('Test Project');
+        const root = lib.getRootTrack(getDatabasePath());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create tracks with different worktrees
+        newCommand('Feature A', {
+          parent: root?.id,
+          summary: 'Feature A',
+          next: 'Next',
+          worktree: 'feature-a',
+        });
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        newCommand('Feature B', {
+          parent: root?.id,
+          summary: 'Feature B',
+          next: 'Next',
+          worktree: 'feature-b',
+        });
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Filter by worktree
+        statusCommand({ json: true, worktree: 'feature-a' });
+
+        const logs = consoleMock.getLogs();
+        const output = JSON.parse(logs.join('\n'));
+
+        // Should only include tracks with worktree 'feature-a' (plus root for context)
+        const worktrees = output.tracks.map((t: any) => t.worktree);
+        expect(worktrees.filter((w: string | null) => w === 'feature-a').length).toBeGreaterThan(0);
+        expect(worktrees.filter((w: string | null) => w === 'feature-b').length).toBe(0);
+      });
+    });
+
+    it('should display worktree suffix in human output', async () => {
+      await withTempDir(() => {
+        initCommand('Test Project');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        newCommand('Feature Track', {
+          summary: 'Feature summary',
+          next: 'Next',
+          worktree: 'feature-branch',
+        });
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        statusCommand({ json: false });
+
+        const logs = consoleMock.getLogs();
+        const output = logs.join('\n');
+
+        // Should display @feature-branch suffix
+        expect(output).toContain('@feature-branch');
+      });
+    });
+
+    it('should include worktree field in JSON output', async () => {
+      await withTempDir(() => {
+        initCommand('Test Project');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        newCommand('Feature Track', {
+          summary: 'Feature summary',
+          next: 'Next',
+          worktree: 'feature-branch',
+        });
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        statusCommand({ json: true });
+
+        const logs = consoleMock.getLogs();
+        const output = JSON.parse(logs.join('\n'));
+
+        const featureTrack = output.tracks.find((t: any) => t.title === 'Feature Track');
+        expect(featureTrack.worktree).toBe('feature-branch');
+      });
+    });
+
+    it('should show null worktree for tracks without worktree', async () => {
+      await withTempDir(() => {
+        initCommand('Test Project');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        statusCommand({ json: true });
+
+        const logs = consoleMock.getLogs();
+        const output = JSON.parse(logs.join('\n'));
+
+        // Root track should have null worktree (created in non-git temp dir)
+        const rootTrack = output.tracks.find((t: any) => t.parent_id === null);
+        expect(rootTrack.worktree).toBeNull();
+      });
+    });
+  });
 });

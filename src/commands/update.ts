@@ -12,6 +12,7 @@ export interface UpdateCommandOptions {
   next: string;
   status?: string;
   file?: string[];
+  worktree?: string;
 }
 
 /**
@@ -58,17 +59,30 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
       updated_at: getCurrentTimestamp(),
     };
 
-    // 5. Update track in database
+    // 5. Handle worktree if provided
+    // '-' means unset (set to null), otherwise set to the provided value
+    if (options.worktree !== undefined) {
+      updateParams.worktree = options.worktree === '-' ? null : options.worktree;
+    }
+
+    // 6. Update track in database
     lib.updateTrack(dbPath, trackId, updateParams);
 
-    // 6. Add file associations if provided
+    // 7. Add file associations if provided
     if (options.file && options.file.length > 0) {
       lib.addTrackFiles(dbPath, trackId, options.file);
     }
 
-    // 7. Success message
+    // 8. Success message
     console.log(`Updated track: ${trackId}`);
     console.log(`Status: ${status}`);
+    if (options.worktree !== undefined) {
+      if (options.worktree === '-') {
+        console.log('Worktree: (unset)');
+      } else {
+        console.log(`Worktree: ${options.worktree}`);
+      }
+    }
     if (options.file && options.file.length > 0) {
       console.log(`Files: ${options.file.length} file(s) associated`);
     }

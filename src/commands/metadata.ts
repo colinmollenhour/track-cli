@@ -80,10 +80,17 @@ export const commandMetadata: CommandMetadata[] = [
         collect: true,
         cliFlag: '--file <file-path>',
       },
+      {
+        name: 'worktree',
+        description: 'Git worktree name (auto-detected if omitted)',
+        type: 'string',
+        required: false,
+        cliFlag: '--worktree <name>',
+      },
     ],
     args: [{ name: 'title', required: true, description: 'Track title' }],
     usage:
-      'track new "<title>" [--parent <track-id>] [--summary "..."] [--next "..."] [--file <path>]...',
+      'track new "<title>" [--parent <track-id>] [--summary "..."] [--next "..."] [--file <path>]... [--worktree <name>]',
     example: 'track new "Add login screen" --parent ROOT123 --summary "UI stub" --next "Hook API"',
   },
   {
@@ -120,10 +127,17 @@ export const commandMetadata: CommandMetadata[] = [
         collect: true,
         cliFlag: '--file <file-path>',
       },
+      {
+        name: 'worktree',
+        description: 'Git worktree name (use "-" to unset)',
+        type: 'string',
+        required: false,
+        cliFlag: '--worktree <name>',
+      },
     ],
     args: [{ name: 'track-id', required: true, description: 'Track ID to update' }],
     usage:
-      'track update <track-id> --summary "..." --next "..." [--status <status>] [--file <file-path>]...',
+      'track update <track-id> --summary "..." --next "..." [--status <status>] [--file <file-path>]... [--worktree <name>]',
     example: 'track update ABC123 --summary "API wired" --next "Write tests" --status in_progress',
   },
   {
@@ -146,9 +160,17 @@ export const commandMetadata: CommandMetadata[] = [
         defaultValue: false,
         cliFlag: '-a, --all',
       },
+      {
+        name: 'worktree',
+        alias: 'w',
+        description: 'Filter to worktree (current if no name given)',
+        type: 'string',
+        required: false,
+        cliFlag: '-w, --worktree [name]',
+      },
     ],
     args: [],
-    usage: 'track status [--json] [-a|--all]',
+    usage: 'track status [--json] [-a|--all] [-w|--worktree [name]]',
     example: 'track status --json --all',
   },
   {

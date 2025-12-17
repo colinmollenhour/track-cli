@@ -88,6 +88,7 @@ export class TrackManager {
     summary: string;
     next_prompt: string;
     status?: 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded';
+    worktree?: string | null;
     files?: string[];
   }): db.Track {
     const now = getCurrentTimestamp();
@@ -98,6 +99,7 @@ export class TrackManager {
       summary: params.summary,
       next_prompt: params.next_prompt,
       status: params.status ?? 'planned',
+      worktree: params.worktree ?? null,
       created_at: now,
       updated_at: now,
     };
@@ -125,6 +127,7 @@ export class TrackManager {
       summary: string;
       next_prompt: string;
       status: 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded';
+      worktree?: string | null;
       files?: string[];
     }
   ): void {
@@ -134,6 +137,11 @@ export class TrackManager {
       status: params.status,
       updated_at: getCurrentTimestamp(),
     };
+
+    // Only include worktree if explicitly provided
+    if ('worktree' in params) {
+      updateParams.worktree = params.worktree;
+    }
 
     db.updateTrack(this.dbPath, trackId, updateParams);
 

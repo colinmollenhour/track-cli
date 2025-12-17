@@ -49,6 +49,7 @@ export function initCommand(name?: string, force?: boolean): void {
       summary: '',
       next_prompt: '',
       status: 'planned',
+      worktree: null, // Root track has no worktree by default
       created_at: now,
       updated_at: now,
     };

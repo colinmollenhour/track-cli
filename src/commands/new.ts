@@ -1,4 +1,4 @@
-import { projectExists, getDatabasePath } from '../utils/paths.js';
+import { projectExists, getDatabasePath, getCurrentWorktree } from '../utils/paths.js';
 import { generateId } from '../utils/id.js';
 import { getCurrentTimestamp } from '../utils/timestamp.js';
 import * as lib from '../lib/db.js';
@@ -12,6 +12,7 @@ export interface NewCommandOptions {
   summary: string;
   next: string;
   file?: string[];
+  worktree?: string;
 }
 
 /**
@@ -61,7 +62,24 @@ export function newCommand(title: string, options: NewCommandOptions): void {
     const trackId = generateId();
     const now = getCurrentTimestamp();
 
-    // 6. Build CreateTrackParams
+    // 6. Determine worktree value
+    // Priority: explicit --worktree flag > inherit from parent > auto-detect
+    let worktree: string | null = null;
+    if (options.worktree !== undefined) {
+      // Explicit override
+      worktree = options.worktree;
+    } else {
+      // Try to inherit from parent first
+      const parentTrack = lib.getTrack(dbPath, parentId);
+      if (parentTrack?.worktree) {
+        worktree = parentTrack.worktree;
+      } else {
+        // Auto-detect from git worktree
+        worktree = getCurrentWorktree();
+      }
+    }
+
+    // 7. Build CreateTrackParams
     const newTrack: CreateTrackParams = {
       id: trackId,
       title: title.trim(),
@@ -69,22 +87,26 @@ export function newCommand(title: string, options: NewCommandOptions): void {
       summary: options.summary || '',
       next_prompt: options.next || '',
       status: 'planned',
+      worktree,
       created_at: now,
       updated_at: now,
     };
 
-    // 7. Create track in database
+    // 8. Create track in database
     lib.createTrack(dbPath, newTrack);
 
-    // 8. Add file associations if provided
+    // 9. Add file associations if provided
     if (options.file && options.file.length > 0) {
       lib.addTrackFiles(dbPath, trackId, options.file);
     }
 
-    // 9. Success message
+    // 10. Success message
     console.log(`Created track: ${title}`);
     console.log(`Track ID: ${trackId}`);
     console.log(`Parent: ${parentId}`);
+    if (worktree) {
+      console.log(`Worktree: ${worktree}`);
+    }
     if (options.file && options.file.length > 0) {
       console.log(`Files: ${options.file.length} file(s) associated`);
     }
