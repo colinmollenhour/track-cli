@@ -239,4 +239,29 @@ export const commandMetadata: CommandMetadata[] = [
     usage: 'track mcp start [-p|--port <port>] [-h|--host <host>]',
     example: 'track mcp start --port 8877',
   },
+  {
+    name: 'web',
+    summary: 'Start or stop the web interface server',
+    flags: [
+      {
+        name: 'port',
+        alias: 'p',
+        description: 'Port to listen on (default: auto)',
+        type: 'number',
+        required: false,
+        cliFlag: '-p, --port <port>',
+      },
+      {
+        name: 'host',
+        alias: 'h',
+        description: 'Host to bind to (default: 127.0.0.1)',
+        type: 'string',
+        required: false,
+        cliFlag: '-h, --host <host>',
+      },
+    ],
+    args: [{ name: 'action', required: false, description: 'Action to perform (start|stop, default: start)' }],
+    usage: 'track web [start|stop] [-p|--port <port>] [-h|--host <host>]',
+    example: 'track web start --port 3000',
+  },
 ];

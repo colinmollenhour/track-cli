@@ -7,6 +7,7 @@ import { updateCommand } from './commands/update.js';
 import { statusCommand } from './commands/status.js';
 import { showCommand } from './commands/show.js';
 import { mcpStartCommand } from './commands/mcp.js';
+import { webCommand } from './commands/web.js';
 import { commandMetadata, CommandFlag } from './commands/metadata.js';
 
 const program = new Command();
@@ -104,6 +105,11 @@ commandMetadata.forEach((meta) => {
           console.error('Available actions: start');
           process.exit(1);
         }
+      });
+      break;
+    case 'web':
+      cmd.action((action: string | undefined, options: { port?: number; host?: string }) => {
+        webCommand(action, options);
       });
       break;
     default:
