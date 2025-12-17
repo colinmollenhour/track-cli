@@ -1,8 +1,8 @@
-import { basename } from 'path';
 import { rmSync } from 'fs';
 import { projectExists, getTrackDir, getDatabasePath } from '../utils/paths.js';
 import { generateId } from '../utils/id.js';
 import { getCurrentTimestamp } from '../utils/timestamp.js';
+import { detectProjectName } from '../utils/project-name.js';
 import * as lib from '../lib/db.js';
 import type { CreateTrackParams } from '../models/types.js';
 
@@ -31,8 +31,8 @@ export function initCommand(name?: string, force?: boolean): void {
     }
   }
 
-  // Determine project name
-  const projectName = name || basename(process.cwd());
+  // Determine project name (auto-detect from package.json/pyproject.toml if not provided)
+  const projectName = name || detectProjectName();
 
   try {
     const dbPath = getDatabasePath();

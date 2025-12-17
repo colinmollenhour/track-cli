@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { fetchStatus, createTrack, updateTrack } from './api';
 import type { TrackWithDetails, CreateTrackParams, UpdateTrackParams, Status } from './api';
 import TrackTree from './components/TrackTree.vue';
 import TrackForm from './components/TrackForm.vue';
 
 const tracks = ref<TrackWithDetails[]>([]);
+
+// Root track is the one with parent_id === null (project name from track init)
+const rootTrack = computed(() => tracks.value.find((t) => t.parent_id === null));
+const projectName = computed(() => rootTrack.value?.title ?? 'Track Status');
 const loading = ref(true);
 const error = ref<string | null>(null);
 
@@ -88,7 +92,7 @@ onMounted(() => {
 <template>
   <div class="max-w-6xl mx-auto p-6">
     <header class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Track Status</h1>
+      <h1 class="text-3xl font-bold text-gray-900">{{ projectName }}</h1>
       <p class="text-gray-600 mt-1">Project tracking dashboard</p>
     </header>
 
