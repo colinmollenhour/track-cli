@@ -1,20 +1,22 @@
 ---
 name: track-sparc
-description: Plan and execute complex projects using SPARC methodology with track-cli. Use when given a project plan/spec in markdown, when starting multi-phase development work, or when asked to break down and implement a large feature. Manages tracks, worktrees, and dependencies automatically.
+description: Plan and execute complex features using SPARC methodology (Specification, Pseudocode, Architecture, Refinement, Completion) with track-cli. Use when given a project plan or specification in markdown, when implementing a large feature with formal phases, or when explicitly asked to use SPARC.
 allowed-tools: Read, Glob, Grep, Edit, Bash
 ---
 
 # SPARC Project Planning with track-cli
 
-This skill enables autonomous planning and execution of complex software projects using the SPARC methodology (Specification, Pseudocode, Architecture, Refinement, Completion) integrated with the `track` CLI for progress tracking.
+This skill enables planning and execution of complex software projects using the SPARC methodology (Specification, Pseudocode, Architecture, Refinement, Completion) integrated with the `track` CLI for progress tracking.
+
+For general track-cli usage and CLI reference, see [track-basic](../track-basic/SKILL.md).
 
 ## When to Use This Skill
 
 - Given a markdown specification or plan file to implement
 - Starting a multi-phase development project
-- Breaking down a large feature into manageable tasks
-- Coordinating work across git worktrees
-- Adapting to specification changes mid-project
+- Breaking down a large feature into formal SPARC phases
+- When explicitly asked to use SPARC methodology
+- Coordinating work across git worktrees with phased implementation
 
 ## Core Workflow
 
@@ -27,6 +29,7 @@ track status --json
 ```
 
 Look for:
+
 - **Existing super tracks** with `status: "planned"` that match the work to be done
 - **Existing feature tracks** that represent the specification for your task
 - If a track already exists for the feature you're implementing, **use it as the parent** for sub-tasks
@@ -46,6 +49,7 @@ When given a specification file:
    - Dependency keywords → `--blocks` relationships
 
 4. **Initialize tracking** (only if `.track/` doesn't exist):
+
    ```bash
    track init "Project Name"
    ```
@@ -56,13 +60,13 @@ When given a specification file:
 
 For each major feature, create and execute these phases:
 
-| Phase | Track Prefix | Purpose |
-|-------|--------------|---------|
-| **S**pecification | `Spec:` | Define requirements, acceptance criteria, edge cases |
-| **P**seudocode | `Pseudocode:` | Design approach, outline algorithms |
-| **A**rchitecture | `Architecture:` | File structure, interfaces, data flow |
-| **R**efinement | `Implement:` | Write code, tests, iterate |
-| **C**ompletion | `Complete:` | Verify acceptance criteria, finalize |
+| Phase             | Track Prefix    | Purpose                                              |
+| ----------------- | --------------- | ---------------------------------------------------- |
+| **S**pecification | `Spec:`         | Define requirements, acceptance criteria, edge cases |
+| **P**seudocode    | `Pseudocode:`   | Design approach, outline algorithms                  |
+| **A**rchitecture  | `Architecture:` | File structure, interfaces, data flow                |
+| **R**efinement    | `Implement:`    | Write code, tests, iterate                           |
+| **C**ompletion    | `Complete:`     | Verify acceptance criteria, finalize                 |
 
 Each phase blocks the next via `--blocks` flag.
 
@@ -95,33 +99,6 @@ When specifications change:
 3. Add/update tracks as needed
 4. Use `--blocks` / `--unblocks` to adjust dependencies
 
-## Key Commands Reference
-
-```bash
-# Initialize project
-track init "Project Name"
-
-# Create feature (under root)
-track new "Feature Name" --summary "..." --next "..."
-
-# Create task (under feature)
-track new "Task Name" --parent <feature-id> --summary "..." --next "..."
-
-# Create with dependency
-track new "Phase 2" --blocks <phase1-id>
-
-# Update progress
-track update <id> --status in_progress --summary "Progress..." --next "Next step..."
-
-# Mark complete (triggers dependency cascade)
-track update <id> --status done
-
-# View status
-track status           # Human-readable
-track status --json    # For parsing
-track status --worktree  # Filter to current worktree
-```
-
 ## Acceptance Criteria Pattern
 
 Always define clear acceptance criteria for tasks:
@@ -138,20 +115,25 @@ Mark done only when ALL criteria are verified.
 ## Example: Ingesting a Plan
 
 **Input specification:**
+
 ```markdown
 # Build User Dashboard
 
 ## Phase 1: API Layer
+
 - User endpoint
 - Preferences endpoint
 
 ## Phase 2: UI Components
+
 Depends on API Layer.
+
 - Dashboard layout
 - Settings panel
 ```
 
 **Resulting commands:**
+
 ```bash
 track init "Build User Dashboard"
 
@@ -170,27 +152,8 @@ track new "Dashboard layout" --parent def456 --summary "Main layout" --next "Cre
 track new "Settings panel" --parent def456 --summary "User settings UI" --next "Create component"
 ```
 
-## Companion Subagents
-
-This skill is loaded by specialized subagents in `.claude/agents/`:
-
-| Agent | Purpose | When to Use |
-|-------|---------|-------------|
-| `sparc-planner` | Design track hierarchies | Given a spec to break down |
-| `sparc-executor` | Execute SPARC phases | Creating tracks, implementing features |
-| `track-manager` | Monitor and manage | Progress checks, spec changes |
-
-**Invoke explicitly:**
-```
-> Use sparc-planner to analyze this specification
-> Use sparc-executor to create tracks from that plan
-> Use track-manager to show project progress
-```
-
-See [.claude/agents/USING_TRACK_AGENTS.md](../../agents/USING_TRACK_AGENTS.md) for detailed usage.
-
 ## Supporting Documentation
 
 - [WORKFLOW.md](WORKFLOW.md) - Detailed SPARC execution steps
-- [TRACK-REFERENCE.md](TRACK-REFERENCE.md) - Complete CLI reference
 - [TEMPLATES.md](TEMPLATES.md) - Plan parsing patterns
+- [track-basic](../track-basic/SKILL.md) - CLI reference and general usage
