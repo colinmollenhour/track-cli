@@ -25,9 +25,15 @@ const statusFilters = ref<Set<Status>>(new Set(['planned', 'in_progress', 'block
 const expandedIds = ref<Set<string>>(new Set());
 const worktreeFilter = ref<string | null>(null);
 
-// Auto-refresh state
-const autoRefresh = ref(false);
+// Auto-refresh state (enabled by default)
+const autoRefresh = ref(true);
 const refreshIntervalId = ref<ReturnType<typeof setInterval> | null>(null);
+
+// Active statuses for auto-expand logic
+const ACTIVE_STATUSES: Status[] = ['planned', 'in_progress', 'blocked'];
+
+// Track whether initial auto-expand has been done
+const initialExpandDone = ref(false);
 
 async function loadTracks() {
   try {
@@ -35,6 +41,17 @@ async function loadTracks() {
     error.value = null;
     const response = await fetchStatus();
     tracks.value = response.tracks;
+
+    // Auto-expand the first active super track on initial load
+    if (!initialExpandDone.value && response.tracks.length > 0) {
+      const firstActiveSuperTrack = response.tracks.find(
+        (t) => t.kind === 'super' && ACTIVE_STATUSES.includes(t.status)
+      );
+      if (firstActiveSuperTrack) {
+        expandedIds.value = new Set([firstActiveSuperTrack.id]);
+      }
+      initialExpandDone.value = true;
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load tracks';
   } finally {
@@ -135,6 +152,8 @@ async function handleFormSubmit(data: {
 onMounted(() => {
   loadTracks();
   document.addEventListener('visibilitychange', handleVisibilityChange);
+  // Start auto-refresh since it's enabled by default
+  startAutoRefresh();
 });
 
 onUnmounted(() => {
