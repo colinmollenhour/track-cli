@@ -207,15 +207,11 @@ track status --json | jq '.tracks[] | select(.status == "in_progress")'
 
 Tasks without clear context or parent.
 
-### 3. Missing SPARC
-
-Features without full SPARC task set (Spec, Pseudo, Arch, Impl, Complete).
-
-### 4. Circular Dependencies
+### 3. Circular Dependencies
 
 Should be prevented by track CLI, but verify if issues occur.
 
-### 5. Forgotten Blockers
+### 4. Forgotten Blockers
 
 Done tasks still listed as blocking others.
 
@@ -232,11 +228,6 @@ When reporting issues:
 
 - [task-id] "Task Name" - last updated [date]
   Recommendation: Check if blocked or needs help
-
-**Missing SPARC Tasks**
-
-- Feature X is missing: Pseudocode, Architecture
-  Recommendation: Create missing tasks
 
 **Potential Problems**
 
