@@ -1,6 +1,6 @@
 ---
 name: track-manager
-description: Track status manager and project health monitor. Use to check project progress, handle spec changes, debug blocked tasks, unblock dependencies, and generate status reports. Use PROACTIVELY when user asks about progress or when specs change.
+description: Track status monitor for read-only status checks. Use for progress reports, debugging blocked tasks, and project health checks. Does NOT implement features (use track-supervisor for that).
 tools: Read, Bash, Grep, Glob
 model: haiku
 skills: track-basic
