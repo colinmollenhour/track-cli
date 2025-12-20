@@ -8,6 +8,7 @@ import type { UpdateTrackParams, Status } from '../models/types.js';
  * Options for the update command.
  */
 export interface UpdateCommandOptions {
+  title?: string;
   summary?: string;
   next?: string;
   status?: string;
@@ -99,6 +100,11 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
       status,
       updated_at: now,
     };
+
+    // 4a. Include title if provided
+    if (options.title !== undefined) {
+      updateParams.title = options.title;
+    }
 
     // 4b. Set completed_at when marking as done or superseded
     if (status === 'done' || status === 'superseded') {
@@ -245,6 +251,9 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
 
     // 11. Success message
     console.log(`Updated track: ${trackId}`);
+    if (options.title !== undefined) {
+      console.log(`Title: ${options.title}`);
+    }
     console.log(`Status: ${status}`);
     if (options.worktree !== undefined) {
       if (options.worktree === '-') {

@@ -263,6 +263,11 @@ export function updateTrack(dbPath: string, trackId: string, params: UpdateTrack
       'updated_at = @updated_at',
     ];
 
+    // Only include title in update if explicitly provided
+    if ('title' in params && params.title !== undefined) {
+      setClauses.push('title = @title');
+    }
+
     // Only include worktree in update if explicitly provided
     if ('worktree' in params) {
       setClauses.push('worktree = @worktree');

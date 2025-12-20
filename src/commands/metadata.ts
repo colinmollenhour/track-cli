@@ -107,6 +107,13 @@ export const commandMetadata: CommandMetadata[] = [
     summary: 'Update the current state of an existing track',
     flags: [
       {
+        name: 'title',
+        description: 'New title for the track',
+        type: 'string',
+        required: false,
+        cliFlag: '--title <title>',
+      },
+      {
         name: 'summary',
         description: 'Updated state description (uses current if omitted)',
         type: 'string',
@@ -162,8 +169,8 @@ export const commandMetadata: CommandMetadata[] = [
     ],
     args: [{ name: 'track-id', required: true, description: 'Track ID to update' }],
     usage:
-      'track update <track-id> --summary "..." --next "..." [--status <status>] [--file <file-path>]... [--worktree <name>] [--blocks <track-id>]... [--unblocks <track-id>]...',
-    example: 'track update ABC123 --summary "API wired" --next "Write tests" --status done',
+      'track update <track-id> [--title "..."] [--summary "..."] [--next "..."] [--status <status>] [--file <file-path>]... [--worktree <name>] [--blocks <track-id>]... [--unblocks <track-id>]...',
+    example: 'track update ABC123 --title "New title" --summary "API wired" --status done',
   },
   {
     name: 'status',

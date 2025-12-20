@@ -13,6 +13,7 @@ interface CreateTrackBody {
 }
 
 interface UpdateTrackBody {
+  title?: string;
   summary?: string;
   next_prompt?: string;
   status: Status;
@@ -83,6 +84,7 @@ export function apiRoutes(manager: TrackManager): Hono {
     }
 
     manager.updateTrack(id, {
+      title: body.title,
       summary: body.summary ?? existing.summary,
       next_prompt: body.next_prompt ?? existing.next_prompt,
       status: body.status,

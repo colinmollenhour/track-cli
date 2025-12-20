@@ -87,6 +87,11 @@ function handleSubmit() {
   if (!isEditing.value) {
     data.title = title.value;
     data.parent_id = parentId.value;
+  } else {
+    // Include title if it changed when editing
+    if (title.value !== props.track?.title) {
+      data.title = title.value;
+    }
   }
 
   emit('submit', data);
@@ -135,8 +140,8 @@ function handleSubmit() {
       </div>
 
       <form @submit.prevent="handleSubmit" class="space-y-4">
-        <!-- Title (only for new tracks) -->
-        <div v-if="!isEditing">
+        <!-- Title -->
+        <div>
           <label class="block text-sm font-medium text-gray-700">Title *</label>
           <input
             v-model="title"

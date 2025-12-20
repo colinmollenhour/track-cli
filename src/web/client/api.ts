@@ -37,6 +37,7 @@ export interface CreateTrackParams {
 }
 
 export interface UpdateTrackParams {
+  title?: string;
   summary?: string;
   next_prompt?: string;
   status: Status;

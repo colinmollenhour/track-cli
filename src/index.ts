@@ -74,6 +74,7 @@ commandMetadata.forEach((meta) => {
         (
           trackId: string,
           options: {
+            title?: string;
             summary?: string;
             next?: string;
             status?: string;

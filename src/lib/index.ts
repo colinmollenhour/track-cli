@@ -126,6 +126,7 @@ export class TrackManager {
   updateTrack(
     trackId: string,
     params: {
+      title?: string;
       summary: string;
       next_prompt: string;
       status: 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded' | 'on_hold';
@@ -140,6 +141,11 @@ export class TrackManager {
       status: params.status,
       updated_at: now,
     };
+
+    // Only include title if explicitly provided
+    if ('title' in params && params.title !== undefined) {
+      updateParams.title = params.title;
+    }
 
     // Only include worktree if explicitly provided
     if ('worktree' in params) {

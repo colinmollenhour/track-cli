@@ -177,6 +177,10 @@ async function handleFormSubmit(data: {
         status: data.status,
         worktree: data.worktree,
       };
+      // Include title if it was changed
+      if (data.title !== undefined) {
+        params.title = data.title;
+      }
       await updateTrack(editingTrack.value.id, params);
     } else {
       const params: CreateTrackParams = {

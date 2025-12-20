@@ -56,6 +56,7 @@ export interface CreateTrackParams {
  * Parameters for updating an existing track.
  */
 export interface UpdateTrackParams {
+  title?: string;
   summary: string;
   next_prompt: string;
   status: Status;
