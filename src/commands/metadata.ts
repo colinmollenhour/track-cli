@@ -177,6 +177,14 @@ export const commandMetadata: CommandMetadata[] = [
         cliFlag: '--json',
       },
       {
+        name: 'markdown',
+        alias: 'm',
+        description: 'Output as Markdown',
+        type: 'boolean',
+        required: false,
+        cliFlag: '-m, --markdown',
+      },
+      {
         name: 'all',
         alias: 'a',
         description: 'Show all tracks including done and superseded (default: active only)',
@@ -201,7 +209,7 @@ export const commandMetadata: CommandMetadata[] = [
         description: 'Optional track ID to show status for (with descendants)',
       },
     ],
-    usage: 'track status [track-id] [--json] [-a|--all] [-w|--worktree [name]]',
+    usage: 'track status [track-id] [--json] [-m|--markdown] [-a|--all] [-w|--worktree [name]]',
     example: 'track status abc123 --json',
   },
   {
@@ -266,7 +274,13 @@ export const commandMetadata: CommandMetadata[] = [
         cliFlag: '-h, --host <host>',
       },
     ],
-    args: [{ name: 'action', required: false, description: 'Action to perform (start|stop, default: start)' }],
+    args: [
+      {
+        name: 'action',
+        required: false,
+        description: 'Action to perform (start|stop, default: start)',
+      },
+    ],
     usage: 'track web [start|stop] [-p|--port <port>] [-h|--host <host>]',
     example: 'track web start --port 3000',
   },

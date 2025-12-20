@@ -11,6 +11,7 @@ import { TREE, colorKind, colorStatus, formatLabel, getTerminalWidth } from '../
  */
 export interface StatusCommandOptions {
   json?: boolean;
+  markdown?: boolean;
   all?: boolean;
   worktree?: string | boolean; // true means use current, string means specific name
 }
@@ -79,6 +80,8 @@ export function statusCommand(trackId: string | undefined, options: StatusComman
       // Output in requested format
       if (options.json) {
         outputJson(tracksWithDetails);
+      } else if (options.markdown) {
+        outputMarkdown(tracksWithDetails, trackId);
       } else {
         outputHuman(tracksWithDetails, trackId);
       }
@@ -135,6 +138,8 @@ export function statusCommand(trackId: string | undefined, options: StatusComman
     // 10. Output in requested format
     if (options.json) {
       outputJson(tracksWithDetails);
+    } else if (options.markdown) {
+      outputMarkdown(tracksWithDetails);
     } else {
       outputHuman(tracksWithDetails);
     }
@@ -155,6 +160,108 @@ function outputJson(tracks: TrackWithDetails[]): void {
     tracks,
   };
   console.log(JSON.stringify(output, null, 2));
+}
+
+/**
+ * Get status emoji for markdown output.
+ */
+function getStatusEmoji(status: string): string {
+  switch (status) {
+    case 'planned':
+      return '📋';
+    case 'in_progress':
+      return '🔄';
+    case 'done':
+      return '✅';
+    case 'blocked':
+      return '🚫';
+    case 'superseded':
+      return '⏭️';
+    default:
+      return '❓';
+  }
+}
+
+/**
+ * Output tracks in Markdown format.
+ *
+ * @param tracks - Tracks to display
+ * @param startFromId - Optional track ID to start the tree from (instead of root)
+ */
+function outputMarkdown(tracks: TrackWithDetails[], startFromId?: string): void {
+  // Find the starting track
+  const startTrack = startFromId
+    ? tracks.find((t) => t.id === startFromId)
+    : tracks.find((t) => t.parent_id === null);
+
+  if (!startTrack) {
+    console.log('No tracks found.');
+    return;
+  }
+
+  // Build a map for quick child lookup
+  const trackMap = new Map<string, TrackWithDetails>();
+  for (const track of tracks) {
+    trackMap.set(track.id, track);
+  }
+
+  // Print header
+  if (startFromId) {
+    console.log(`# Track: ${startTrack.title}\n`);
+  } else {
+    console.log(`# ${startTrack.title}\n`);
+  }
+
+  // Print tree starting from start track
+  printTrackMarkdown(startTrack, trackMap, 0);
+}
+
+/**
+ * Recursively print a track and its children in markdown format.
+ *
+ * @param track - Track to print
+ * @param trackMap - Map of all tracks for child lookup
+ * @param depth - Current depth for indentation
+ */
+function printTrackMarkdown(
+  track: TrackWithDetails,
+  trackMap: Map<string, TrackWithDetails>,
+  depth: number
+): void {
+  const indent = '  '.repeat(depth);
+  const emoji = getStatusEmoji(track.status);
+  const worktreeSuffix = track.worktree ? ` \`@${track.worktree}\`` : '';
+
+  // Track header line
+  console.log(`${indent}- ${emoji} **${track.title}** \`${track.id}\`${worktreeSuffix}`);
+
+  // Details as sub-items
+  if (track.summary) {
+    console.log(`${indent}  - ${track.summary}`);
+  }
+  if (track.next_prompt) {
+    console.log(`${indent}  - *Next:* ${track.next_prompt}`);
+  }
+  if (track.files.length > 0) {
+    console.log(`${indent}  - *Files:* ${track.files.map((f) => `\`${f}\``).join(', ')}`);
+  }
+  if (track.blocks.length > 0) {
+    console.log(`${indent}  - *Blocks:* ${track.blocks.map((id) => `\`${id}\``).join(', ')}`);
+  }
+  if (track.blocked_by.length > 0) {
+    console.log(
+      `${indent}  - *Blocked by:* ${track.blocked_by.map((id) => `\`${id}\``).join(', ')}`
+    );
+  }
+
+  // Print children
+  const children = track.children.filter(Boolean);
+  for (const childId of children) {
+    if (!childId) continue;
+    const child = trackMap.get(childId);
+    if (!child) continue;
+    printTrackMarkdown(child, trackMap, depth + 1);
+  }
 }
 
 /**

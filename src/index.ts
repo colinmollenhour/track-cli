@@ -90,7 +90,12 @@ commandMetadata.forEach((meta) => {
       cmd.action(
         (
           trackId: string | undefined,
-          options: { json?: boolean; all?: boolean; worktree?: string | boolean }
+          options: {
+            json?: boolean;
+            markdown?: boolean;
+            all?: boolean;
+            worktree?: string | boolean;
+          }
         ) => {
           statusCommand(trackId, options);
         }
