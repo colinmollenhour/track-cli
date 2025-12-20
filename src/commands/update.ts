@@ -52,10 +52,17 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
         })()
     : 'in_progress';
 
-  // 3b. Validate: cannot change from on_hold to in_progress via CLI
+  // 3b. Conditional update: fail if status is already the same (prevents race conditions)
+  const currentTrack = lib.getTrack(dbPath, trackId);
+  if (currentTrack && currentTrack.status === status) {
+    console.error(`Error: Track is already '${status}'.`);
+    console.error('No update performed.');
+    process.exit(1);
+  }
+
+  // 3c. Validate: cannot change from on_hold to in_progress via CLI
   // (Use the web UI to do this, as it allows more flexibility)
   if (status === 'in_progress') {
-    const currentTrack = lib.getTrack(dbPath, trackId);
     if (currentTrack && currentTrack.status === 'on_hold') {
       console.error(`Error: Cannot change status from 'on_hold' to 'in_progress' via CLI.`);
       console.error('Use the web UI to change status from on_hold to in_progress.');
@@ -63,14 +70,13 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
     }
   }
 
-  // 3c. Validate: cannot set non-final status if any ancestor is in a final state
+  // 3d. Validate: cannot set non-final status if any ancestor is in a final state
   const FINAL_STATUSES: Status[] = ['done', 'superseded'];
   const NON_FINAL_STATUSES: Status[] = ['planned', 'in_progress', 'blocked', 'on_hold'];
 
   if (NON_FINAL_STATUSES.includes(status)) {
     // Check all ancestors for final status
-    const track = lib.getTrack(dbPath, trackId);
-    let parentId = track?.parent_id;
+    let parentId = currentTrack?.parent_id;
 
     while (parentId) {
       const parent = lib.getTrack(dbPath, parentId);
