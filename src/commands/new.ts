@@ -91,6 +91,7 @@ export function newCommand(title: string, options: NewCommandOptions): void {
       status: 'planned',
       worktree,
       sort_order: sortOrder,
+      archived: 0,
       created_at: now,
       updated_at: now,
       completed_at: null,

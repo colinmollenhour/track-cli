@@ -21,6 +21,7 @@ export interface Track {
   status: Status;
   worktree: string | null;
   sort_order: number;
+  archived: 0 | 1;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -49,6 +50,7 @@ export interface CreateTrackParams {
   status: Status;
   worktree: string | null;
   sort_order: number;
+  archived: 0 | 1;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -63,6 +65,7 @@ export interface UpdateTrackParams {
   next_prompt: string;
   status: Status;
   worktree?: string | null;
+  archived?: 0 | 1;
   updated_at: string;
   completed_at?: string | null;
 }
@@ -89,6 +92,12 @@ export const ACTIVE_STATUSES: readonly Status[] = [
   'blocked',
   'on_hold',
 ] as const;
+
+/**
+ * Status values that can be archived.
+ * Only final/terminal statuses can be archived.
+ */
+export const ARCHIVABLE_STATUSES: readonly Status[] = ['done', 'on_hold', 'superseded'] as const;
 
 /**
  * Check if a string is a valid status.

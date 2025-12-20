@@ -93,6 +93,10 @@ function outputHuman(track: TrackWithDetails): void {
   console.log(`${indent}${formatLabel('next:', track.next_prompt, labelOptions)}`);
   console.log(`${indent}${formatLabel('status:', colorStatus(track.status), labelOptions)}`);
 
+  if (track.archived === 1) {
+    console.log(`${indent}${formatLabel('archived:', 'yes', labelOptions)}`);
+  }
+
   if (track.worktree) {
     console.log(`${indent}${formatLabel('worktree:', track.worktree, labelOptions)}`);
   }

@@ -51,6 +51,7 @@ export function initCommand(name?: string, force?: boolean): void {
       status: 'planned',
       worktree: null, // Root track has no worktree by default
       sort_order: 0,
+      archived: 0,
       created_at: now,
       updated_at: now,
       completed_at: null,

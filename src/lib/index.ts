@@ -105,6 +105,7 @@ export class TrackManager {
       status,
       worktree: params.worktree ?? null,
       sort_order: sortOrder,
+      archived: 0,
       created_at: now,
       updated_at: now,
       completed_at: status === 'done' || status === 'superseded' ? now : null,
@@ -336,6 +337,40 @@ export class TrackManager {
   moveTrack(trackId: string, targetId: string, position: 'before' | 'after'): void {
     db.moveTrack(this.dbPath, trackId, targetId, position);
   }
+
+  /**
+   * Set the archived status of a track.
+   *
+   * @param trackId - Track ID to update
+   * @param archived - Whether the track should be archived
+   */
+  setArchived(trackId: string, archived: boolean): void {
+    db.setArchived(this.dbPath, trackId, archived);
+  }
+
+  /**
+   * Get all archived tracks.
+   *
+   * @returns Array of archived tracks with details
+   */
+  getArchivedTracks(): db.TrackWithDetails[] {
+    const tracks = db.getArchivedTracks(this.dbPath);
+    const fileMap = db.getAllTrackFiles(this.dbPath);
+    const dependencyMap = db.getAllDependencies(this.dbPath);
+    return buildTrackTree(tracks, fileMap, dependencyMap);
+  }
+
+  /**
+   * Get all unarchived tracks.
+   *
+   * @returns Array of unarchived tracks with details
+   */
+  getUnarchivedTracks(): db.TrackWithDetails[] {
+    const tracks = db.getUnarchivedTracks(this.dbPath);
+    const fileMap = db.getAllTrackFiles(this.dbPath);
+    const dependencyMap = db.getAllDependencies(this.dbPath);
+    return buildTrackTree(tracks, fileMap, dependencyMap);
+  }
 }
 
 // Re-export database functions for advanced use cases
@@ -358,4 +393,9 @@ export {
   getNextSortOrder,
   moveTrack,
   updateSortOrder,
+  setArchived,
+  getArchivedTracks,
+  getUnarchivedTracks,
+  getUnarchivedTracksByStatus,
+  getUnarchivedTracksByStatusAndWorktree,
 } from './db.js';

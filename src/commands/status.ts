@@ -14,6 +14,7 @@ export interface StatusCommandOptions {
   markdown?: boolean;
   all?: boolean;
   worktree?: string | boolean; // true means use current, string means specific name
+  archived?: boolean; // Show archived tracks instead of active tracks
 }
 
 /**
@@ -37,7 +38,30 @@ export function statusCommand(trackId: string | undefined, options: StatusComman
     // Run migrations if needed
     migrateDatabase(dbPath);
 
-    // 2. If a specific track ID is provided, show that track and its descendants
+    // 2. If viewing archived tracks
+    if (options.archived) {
+      // Get all archived tracks
+      const tracks = lib.getArchivedTracks(dbPath);
+
+      // Load file and dependency maps
+      const fileMap = lib.getAllTrackFiles(dbPath);
+      const dependencyMap = lib.getAllDependencies(dbPath);
+
+      // Build tree structure
+      const tracksWithDetails = buildTrackTree(tracks, fileMap, dependencyMap);
+
+      // Output in requested format
+      if (options.json) {
+        outputJson(tracksWithDetails);
+      } else if (options.markdown) {
+        outputMarkdown(tracksWithDetails);
+      } else {
+        outputHumanArchived(tracksWithDetails);
+      }
+      return;
+    }
+
+    // 3. If a specific track ID is provided, show that track and its descendants
     if (trackId) {
       // Validate track exists
       if (!lib.trackExists(dbPath, trackId)) {
@@ -45,10 +69,10 @@ export function statusCommand(trackId: string | undefined, options: StatusComman
         process.exit(1);
       }
 
-      // Get the specified track and all its descendants
+      // Get the specified track and all its descendants (unarchived only)
       const allTracks = options.all
-        ? lib.getAllTracks(dbPath)
-        : lib.getTracksByStatus(dbPath, ACTIVE_STATUSES);
+        ? lib.getUnarchivedTracks(dbPath)
+        : lib.getUnarchivedTracksByStatus(dbPath, ACTIVE_STATUSES);
 
       // Build descendant set
       const descendantIds = new Set<string>();
@@ -88,7 +112,7 @@ export function statusCommand(trackId: string | undefined, options: StatusComman
       return;
     }
 
-    // 3. Determine worktree filter
+    // 4. Determine worktree filter
     let worktreeFilter: string | null = null;
     if (options.worktree !== undefined) {
       if (options.worktree === true) {
@@ -104,21 +128,23 @@ export function statusCommand(trackId: string | undefined, options: StatusComman
       }
     }
 
-    // 4. Load tracks from database (filtered by default, all with --all flag)
+    // 5. Load tracks from database (filtered by default, all with --all flag)
+    // Always filter out archived tracks from the normal view
     let tracks = options.all
-      ? lib.getAllTracks(dbPath)
-      : lib.getTracksByStatus(dbPath, ACTIVE_STATUSES);
+      ? lib.getUnarchivedTracks(dbPath)
+      : lib.getUnarchivedTracksByStatus(dbPath, ACTIVE_STATUSES);
 
-    // 5. Apply worktree filter if specified
+    // 6. Apply worktree filter if specified
     if (worktreeFilter) {
       tracks = tracks.filter((t) => t.worktree === worktreeFilter);
     }
 
-    // 6. Include root track for project context, but only if it's active
+    // 7. Include root track for project context, but only if it's active and unarchived
     if (!options.all) {
       const rootTrack = lib.getRootTrack(dbPath);
       if (
         rootTrack &&
+        rootTrack.archived === 0 &&
         !tracks.find((t) => t.id === rootTrack.id) &&
         ACTIVE_STATUSES.includes(rootTrack.status)
       ) {
@@ -390,5 +416,38 @@ function printTrack(
     if (i < children.length - 1) {
       console.log();
     }
+  }
+}
+
+/**
+ * Output archived tracks in human-readable format.
+ *
+ * @param tracks - Archived tracks to display
+ */
+function outputHumanArchived(tracks: TrackWithDetails[]): void {
+  if (tracks.length === 0) {
+    console.log('No archived tracks.');
+    return;
+  }
+
+  console.log('Archived Tracks');
+  console.log('===============');
+  console.log();
+
+  const terminalWidth = getTerminalWidth();
+
+  for (const track of tracks) {
+    const worktreeSuffix = track.worktree ? ` @${track.worktree}` : '';
+    console.log(`[${colorKind(track.kind)}] ${track.id} - ${track.title}${worktreeSuffix}`);
+
+    const labelOptions = {
+      labelWidth: 8,
+      maxWidth: terminalWidth - 2,
+      continuationIndent: '  ',
+    };
+
+    console.log(`  ${formatLabel('summary:', track.summary, labelOptions)}`);
+    console.log(`  ${formatLabel('status:', colorStatus(track.status), labelOptions)}`);
+    console.log();
   }
 }

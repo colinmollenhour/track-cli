@@ -17,6 +17,7 @@ const props = defineProps<{
   allTracks: TrackWithDetails[];
   indent?: number;
   animationClass?: string;
+  viewingArchived?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -24,7 +25,13 @@ const emit = defineEmits<{
   addChild: [parentId: string];
   moveUp: [trackId: string];
   moveDown: [trackId: string];
+  archive: [trackId: string];
+  unarchive: [trackId: string];
+  delete: [trackId: string];
 }>();
+
+// Statuses that can be archived
+const ARCHIVABLE_STATUSES = ['done', 'on_hold', 'superseded'];
 
 function getTrackTitle(id: string): string {
   const track = props.allTracks.find((t) => t.id === id);
@@ -139,8 +146,8 @@ async function copyToClipboard(text: string, type: 'id' | 'title') {
 
       <!-- Actions -->
       <div class="flex items-center gap-1 ml-4 flex-shrink-0">
-        <!-- Move buttons -->
-        <div class="flex flex-col gap-0.5 mr-2">
+        <!-- Move buttons (hidden in archived view) -->
+        <div v-if="!viewingArchived" class="flex flex-col gap-0.5 mr-2">
           <button
             @click="emit('moveUp', track.id)"
             class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-0.5 rounded"
@@ -160,18 +167,46 @@ async function copyToClipboard(text: string, type: 'id' | 'title') {
             </svg>
           </button>
         </div>
-        <button
-          @click="emit('edit', track)"
-          class="text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded"
-        >
-          Edit
-        </button>
-        <button
-          @click="emit('addChild', track.id)"
-          class="text-sm text-green-600 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded"
-        >
-          + Child
-        </button>
+
+        <!-- Normal view buttons -->
+        <template v-if="!viewingArchived">
+          <button
+            @click="emit('edit', track)"
+            class="text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded"
+          >
+            Edit
+          </button>
+          <button
+            @click="emit('addChild', track.id)"
+            class="text-sm text-green-600 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded"
+          >
+            + Child
+          </button>
+          <button
+            v-if="ARCHIVABLE_STATUSES.includes(track.status)"
+            @click="emit('archive', track.id)"
+            class="text-sm text-amber-600 hover:text-amber-800 hover:bg-amber-50 px-2 py-1 rounded"
+            title="Archive this track"
+          >
+            Archive
+          </button>
+        </template>
+
+        <!-- Archived view buttons -->
+        <template v-else>
+          <button
+            @click="emit('unarchive', track.id)"
+            class="text-sm text-amber-600 hover:text-amber-800 hover:bg-amber-50 px-2 py-1 rounded"
+          >
+            Unarchive
+          </button>
+          <button
+            @click="emit('delete', track.id)"
+            class="text-sm text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded"
+          >
+            Delete
+          </button>
+        </template>
       </div>
     </div>
   </div>

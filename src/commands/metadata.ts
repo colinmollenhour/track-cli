@@ -208,6 +208,14 @@ export const commandMetadata: CommandMetadata[] = [
         required: false,
         cliFlag: '-w, --worktree [name]',
       },
+      {
+        name: 'archived',
+        description: 'Show archived tracks instead of active tracks',
+        type: 'boolean',
+        required: false,
+        defaultValue: false,
+        cliFlag: '--archived',
+      },
     ],
     args: [
       {
@@ -216,7 +224,8 @@ export const commandMetadata: CommandMetadata[] = [
         description: 'Optional track ID to show status for (with descendants)',
       },
     ],
-    usage: 'track status [track-id] [--json] [-m|--markdown] [-a|--all] [-w|--worktree [name]]',
+    usage:
+      'track status [track-id] [--json] [-m|--markdown] [-a|--all] [-w|--worktree [name]] [--archived]',
     example: 'track status abc123 --json',
   },
   {
@@ -234,14 +243,6 @@ export const commandMetadata: CommandMetadata[] = [
     args: [{ name: 'track-id', required: true, description: 'Track ID to display' }],
     usage: 'track show <track-id> [--json]',
     example: 'track show ABC123 --json',
-  },
-  {
-    name: 'delete',
-    summary: 'Delete a track and all its descendants',
-    flags: [],
-    args: [{ name: 'track-id', required: true, description: 'Track ID to delete' }],
-    usage: 'track delete <track-id>',
-    example: 'track delete ABC12345',
   },
   {
     name: 'mcp',
@@ -328,5 +329,21 @@ export const commandMetadata: CommandMetadata[] = [
     ],
     usage: 'track sort <track-id> <before|after> <target-id>',
     example: 'track sort ABC123 before DEF456',
+  },
+  {
+    name: 'archive',
+    summary: 'Archive a completed track (done, on_hold, or superseded)',
+    flags: [],
+    args: [{ name: 'track-id', required: true, description: 'Track ID to archive' }],
+    usage: 'track archive <track-id>',
+    example: 'track archive ABC123',
+  },
+  {
+    name: 'unarchive',
+    summary: 'Restore an archived track to normal visibility',
+    flags: [],
+    args: [{ name: 'track-id', required: true, description: 'Track ID to unarchive' }],
+    usage: 'track unarchive <track-id>',
+    example: 'track unarchive ABC123',
   },
 ];

@@ -35,6 +35,10 @@ interface MoveTrackBody {
   position: 'before' | 'after';
 }
 
+interface ArchiveTrackBody {
+  archived: boolean;
+}
+
 export function apiRoutes(
   manager: TrackManager,
   projectPath: string,
@@ -192,6 +196,43 @@ export function apiRoutes(
     } catch (error) {
       return c.json({ error: (error as Error).message }, 400);
     }
+  });
+
+  // PATCH /api/web/tracks/:id/archive - Archive or unarchive a track
+  api.patch('/tracks/:id/archive', async (c) => {
+    const trackId = c.req.param('id');
+    const body = await c.req.json<ArchiveTrackBody>();
+
+    const track = manager.getTrack(trackId);
+    if (!track) {
+      return c.json({ error: 'Track not found' }, 404);
+    }
+
+    if (typeof body.archived !== 'boolean') {
+      return c.json({ error: 'Missing required field: archived (boolean)' }, 400);
+    }
+
+    manager.setArchived(trackId, body.archived);
+    const updated = manager.getTrack(trackId);
+    return c.json(updated);
+  });
+
+  // DELETE /api/web/tracks/:id - Delete a track
+  api.delete('/tracks/:id', (c) => {
+    const trackId = c.req.param('id');
+
+    const track = manager.getTrack(trackId);
+    if (!track) {
+      return c.json({ error: 'Track not found' }, 404);
+    }
+
+    // Prevent deleting the root track
+    if (track.parent_id === null) {
+      return c.json({ error: 'Cannot delete the root track' }, 400);
+    }
+
+    const deletedCount = manager.deleteTrack(trackId);
+    return c.json({ success: true, deletedCount });
   });
 
   // POST /api/web/stop - Stop the web server

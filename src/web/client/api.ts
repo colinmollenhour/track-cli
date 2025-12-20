@@ -16,6 +16,7 @@ export interface Track {
   status: Status;
   worktree: string | null;
   sort_order: number;
+  archived: 0 | 1;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -135,4 +136,20 @@ export async function stopServer(): Promise<void> {
     method: 'POST',
   });
   // Server will stop, so we don't need to handle the response
+}
+
+export async function archiveTrack(id: string, archived: boolean): Promise<Track> {
+  const response = await fetch(`${API_BASE}/tracks/${id}/archive`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ archived }),
+  });
+  return handleResponse<Track>(response);
+}
+
+export async function deleteTrack(id: string): Promise<{ success: boolean; deletedCount: number }> {
+  const response = await fetch(`${API_BASE}/tracks/${id}`, {
+    method: 'DELETE',
+  });
+  return handleResponse<{ success: boolean; deletedCount: number }>(response);
 }

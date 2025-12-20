@@ -8,6 +8,7 @@ import { statusCommand } from './commands/status.js';
 import { showCommand } from './commands/show.js';
 import { deleteCommand } from './commands/delete.js';
 import { sortCommand } from './commands/sort.js';
+import { archiveCommand, unarchiveCommand } from './commands/archive.js';
 import { mcpStartCommand } from './commands/mcp.js';
 import { webCommand } from './commands/web.js';
 import { commandMetadata, CommandFlag } from './commands/metadata.js';
@@ -98,6 +99,7 @@ commandMetadata.forEach((meta) => {
             markdown?: boolean;
             all?: boolean;
             worktree?: string | boolean;
+            archived?: boolean;
           }
         ) => {
           statusCommand(trackId, options);
@@ -133,6 +135,16 @@ commandMetadata.forEach((meta) => {
     case 'sort':
       cmd.action((trackId: string, position: string, targetId: string) => {
         sortCommand(trackId, position, targetId);
+      });
+      break;
+    case 'archive':
+      cmd.action((trackId: string) => {
+        archiveCommand(trackId);
+      });
+      break;
+    case 'unarchive':
+      cmd.action((trackId: string) => {
+        unarchiveCommand(trackId);
       });
       break;
     default:

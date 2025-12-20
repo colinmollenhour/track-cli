@@ -25,6 +25,7 @@ CREATE TABLE tracks (
   status TEXT NOT NULL,
   worktree TEXT DEFAULT NULL,
   sort_order INTEGER DEFAULT 0,
+  archived INTEGER DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   completed_at TEXT DEFAULT NULL,
@@ -70,6 +71,13 @@ CREATE INDEX idx_track_files_track ON track_files(track_id);
  */
 const CREATE_WORKTREE_INDEX = `
 CREATE INDEX idx_tracks_worktree ON tracks(worktree);
+`;
+
+/**
+ * Index on tracks.archived for efficient archive filtering.
+ */
+const CREATE_ARCHIVED_INDEX = `
+CREATE INDEX idx_tracks_archived ON tracks(archived);
 `;
 
 /**
@@ -144,6 +152,7 @@ export function initializeDatabase(dbPath: string): void {
     db.exec(CREATE_STATUS_INDEX);
     db.exec(CREATE_FILES_INDEX);
     db.exec(CREATE_WORKTREE_INDEX);
+    db.exec(CREATE_ARCHIVED_INDEX);
     db.exec(CREATE_DEPENDENCIES_BLOCKING_INDEX);
     db.exec(CREATE_DEPENDENCIES_BLOCKED_INDEX);
   } finally {
@@ -194,6 +203,18 @@ export function migrateDatabase(dbPath: string): void {
       `);
     }
 
+    // Migrate archived column
+    const hasArchived = columns.some((col) => col.name === 'archived');
+    if (!hasArchived) {
+      db.exec('ALTER TABLE tracks ADD COLUMN archived INTEGER DEFAULT 0');
+      // Check if the index exists before creating
+      const indices = db.pragma('index_list(tracks)') as Array<{ name: string }>;
+      const hasArchivedIndex = indices.some((idx) => idx.name === 'idx_tracks_archived');
+      if (!hasArchivedIndex) {
+        db.exec(CREATE_ARCHIVED_INDEX);
+      }
+    }
+
     // Migrate track_dependencies table
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as Array<{
       name: string;
@@ -220,9 +241,9 @@ export function createTrack(dbPath: string, params: CreateTrackParams): Track {
   return withDatabase(dbPath, (db) => {
     const stmt = db.prepare(`
       INSERT INTO tracks (
-        id, title, parent_id, summary, next_prompt, status, worktree, sort_order, created_at, updated_at, completed_at
+        id, title, parent_id, summary, next_prompt, status, worktree, sort_order, archived, created_at, updated_at, completed_at
       ) VALUES (
-        @id, @title, @parent_id, @summary, @next_prompt, @status, @worktree, @sort_order, @created_at, @updated_at, @completed_at
+        @id, @title, @parent_id, @summary, @next_prompt, @status, @worktree, @sort_order, @archived, @created_at, @updated_at, @completed_at
       )
     `);
 
@@ -309,6 +330,11 @@ export function updateTrack(dbPath: string, trackId: string, params: UpdateTrack
       setClauses.push('worktree = @worktree');
     }
 
+    // Only include archived in update if explicitly provided
+    if ('archived' in params) {
+      setClauses.push('archived = @archived');
+    }
+
     // Only include completed_at in update if explicitly provided
     if ('completed_at' in params) {
       setClauses.push('completed_at = @completed_at');
@@ -324,6 +350,20 @@ export function updateTrack(dbPath: string, trackId: string, params: UpdateTrack
       id: trackId,
       ...params,
     });
+  });
+}
+
+/**
+ * Set the archived status of a track.
+ *
+ * @param dbPath - Path to the database file
+ * @param trackId - Track ID to update
+ * @param archived - Whether the track should be archived
+ */
+export function setArchived(dbPath: string, trackId: string, archived: boolean): void {
+  withDatabase(dbPath, (db) => {
+    const stmt = db.prepare('UPDATE tracks SET archived = ? WHERE id = ?');
+    stmt.run(archived ? 1 : 0, trackId);
   });
 }
 
@@ -456,6 +496,71 @@ export function getTracksByStatusAndWorktree(
     const placeholders = statuses.map(() => '?').join(', ');
     const stmt = db.prepare(
       `SELECT * FROM tracks WHERE status IN (${placeholders}) AND worktree = ?`
+    );
+    return stmt.all(...statuses, worktree) as Track[];
+  });
+}
+
+/**
+ * Get all unarchived tracks from the database.
+ *
+ * @param dbPath - Path to the database file
+ * @returns Array of unarchived tracks
+ */
+export function getUnarchivedTracks(dbPath: string): Track[] {
+  return withDatabase(dbPath, (db) => {
+    const stmt = db.prepare('SELECT * FROM tracks WHERE archived = 0 ORDER BY sort_order');
+    return stmt.all() as Track[];
+  });
+}
+
+/**
+ * Get all archived tracks from the database.
+ *
+ * @param dbPath - Path to the database file
+ * @returns Array of archived tracks
+ */
+export function getArchivedTracks(dbPath: string): Track[] {
+  return withDatabase(dbPath, (db) => {
+    const stmt = db.prepare('SELECT * FROM tracks WHERE archived = 1 ORDER BY sort_order');
+    return stmt.all() as Track[];
+  });
+}
+
+/**
+ * Get unarchived tracks filtered by status values.
+ *
+ * @param dbPath - Path to the database file
+ * @param statuses - Array of status values to filter by
+ * @returns Array of unarchived tracks matching the given statuses
+ */
+export function getUnarchivedTracksByStatus(dbPath: string, statuses: readonly Status[]): Track[] {
+  return withDatabase(dbPath, (db) => {
+    const placeholders = statuses.map(() => '?').join(', ');
+    const stmt = db.prepare(
+      `SELECT * FROM tracks WHERE status IN (${placeholders}) AND archived = 0 ORDER BY sort_order`
+    );
+    return stmt.all(...statuses) as Track[];
+  });
+}
+
+/**
+ * Get unarchived tracks filtered by both status values and worktree.
+ *
+ * @param dbPath - Path to the database file
+ * @param statuses - Array of status values to filter by
+ * @param worktree - Worktree name to filter by
+ * @returns Array of unarchived tracks matching the given statuses and worktree
+ */
+export function getUnarchivedTracksByStatusAndWorktree(
+  dbPath: string,
+  statuses: readonly Status[],
+  worktree: string
+): Track[] {
+  return withDatabase(dbPath, (db) => {
+    const placeholders = statuses.map(() => '?').join(', ');
+    const stmt = db.prepare(
+      `SELECT * FROM tracks WHERE status IN (${placeholders}) AND worktree = ? AND archived = 0 ORDER BY sort_order`
     );
     return stmt.all(...statuses, worktree) as Track[];
   });

@@ -10,6 +10,7 @@ const props = defineProps<{
   expandedIds: Set<string>;
   worktreeFilter: string | null;
   animatedIds: Map<string, string>;
+  viewingArchived: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -17,9 +18,13 @@ const emit = defineEmits<{
   addChild: [parentId: string | null];
   moveUp: [trackId: string];
   moveDown: [trackId: string];
+  archive: [trackId: string];
+  unarchive: [trackId: string];
+  delete: [trackId: string];
   'update:statusFilters': [filters: Set<Status>];
   'update:expandedIds': [ids: Set<string>];
   'update:worktreeFilter': [filter: string | null];
+  'update:viewingArchived': [viewing: boolean];
 }>();
 
 const allStatuses: { value: Status; label: string }[] = [
@@ -57,17 +62,20 @@ function selectActiveStatuses() {
   emit('update:statusFilters', new Set(['planned', 'in_progress', 'blocked']));
 }
 
-// Filter tracks by status and worktree
+// Filter tracks by archived status, status, and worktree
 const filteredTracks = computed(() => {
   let result = props.tracks;
 
-  // Filter by status
-  if (props.statusFilters.size > 0) {
+  // Filter by archived status
+  result = result.filter((t) => (t.archived === 1) === props.viewingArchived);
+
+  // Filter by status (only when not viewing archived)
+  if (!props.viewingArchived && props.statusFilters.size > 0) {
     result = result.filter((t) => props.statusFilters.has(t.status));
   }
 
-  // Filter by worktree
-  if (props.worktreeFilter) {
+  // Filter by worktree (only when not viewing archived)
+  if (!props.viewingArchived && props.worktreeFilter) {
     result = result.filter((t) => t.worktree === props.worktreeFilter);
   }
 
@@ -129,8 +137,8 @@ function collapseAll() {
   <div :class="{ 'opacity-50 pointer-events-none': loading }">
     <!-- Filters and controls -->
     <div class="mb-4 flex flex-wrap items-center gap-4">
-      <!-- Status filters -->
-      <div class="flex items-center gap-2">
+      <!-- Status filters (hidden when viewing archived) -->
+      <div v-if="!viewingArchived" class="flex items-center gap-2">
         <span class="text-sm text-gray-600">Filter:</span>
         <button
           v-for="s in allStatuses"
@@ -148,7 +156,7 @@ function collapseAll() {
       </div>
 
       <!-- Quick filter buttons -->
-      <div class="flex items-center gap-2">
+      <div v-if="!viewingArchived" class="flex items-center gap-2">
         <button
           @click="selectActiveStatuses"
           class="text-xs text-gray-500 hover:text-gray-700 underline"
@@ -163,8 +171,23 @@ function collapseAll() {
         </button>
       </div>
 
-      <!-- Worktree filter -->
-      <div v-if="uniqueWorktrees.length > 0" class="flex items-center gap-2">
+      <!-- Archive toggle -->
+      <div class="flex items-center gap-2">
+        <button
+          @click="emit('update:viewingArchived', !viewingArchived)"
+          :class="[
+            'text-xs px-3 py-1 rounded border transition-colors',
+            viewingArchived
+              ? 'bg-amber-100 border-amber-300 text-amber-800'
+              : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100',
+          ]"
+        >
+          {{ viewingArchived ? '📦 Viewing Archived' : '📦 View Archived' }}
+        </button>
+      </div>
+
+      <!-- Worktree filter (hidden when viewing archived) -->
+      <div v-if="!viewingArchived && uniqueWorktrees.length > 0" class="flex items-center gap-2">
         <span class="text-sm text-gray-600">Worktree:</span>
         <select
           :value="worktreeFilter ?? ''"
@@ -234,10 +257,14 @@ function collapseAll() {
                 :all-tracks="tracks"
                 :indent="0"
                 :animation-class="getAnimationClass(track.id)"
+                :viewing-archived="viewingArchived"
                 @edit="emit('edit', $event)"
                 @add-child="emit('addChild', $event)"
                 @move-up="emit('moveUp', $event)"
                 @move-down="emit('moveDown', $event)"
+                @archive="emit('archive', $event)"
+                @unarchive="emit('unarchive', $event)"
+                @delete="emit('delete', $event)"
               />
             </div>
           </div>
@@ -268,10 +295,14 @@ function collapseAll() {
                     :all-tracks="tracks"
                     :indent="1"
                     :animation-class="getAnimationClass(child.id)"
+                    :viewing-archived="viewingArchived"
                     @edit="emit('edit', $event)"
                     @add-child="emit('addChild', $event)"
                     @move-up="emit('moveUp', $event)"
                     @move-down="emit('moveDown', $event)"
+                    @archive="emit('archive', $event)"
+                    @unarchive="emit('unarchive', $event)"
+                    @delete="emit('delete', $event)"
                   />
                 </div>
               </div>
@@ -286,10 +317,14 @@ function collapseAll() {
                       :all-tracks="tracks"
                       :indent="2"
                       :animation-class="getAnimationClass(grandchild.id)"
+                      :viewing-archived="viewingArchived"
                       @edit="emit('edit', $event)"
                       @add-child="emit('addChild', $event)"
                       @move-up="emit('moveUp', $event)"
                       @move-down="emit('moveDown', $event)"
+                      @archive="emit('archive', $event)"
+                      @unarchive="emit('unarchive', $event)"
+                      @delete="emit('delete', $event)"
                     />
                   </div>
                 </div>

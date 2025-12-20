@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { fetchStatus, createTrack, updateTrack, moveTrack, stopServer } from './api';
+import { fetchStatus, createTrack, updateTrack, moveTrack, stopServer, archiveTrack, deleteTrack } from './api';
 import type { TrackWithDetails, CreateTrackParams, UpdateTrackParams, Status, GitHost } from './api';
 import TrackTree from './components/TrackTree.vue';
 import TrackForm from './components/TrackForm.vue';
@@ -48,6 +48,7 @@ const newTrackParentId = ref<string | null>(null);
 const statusFilters = ref<Set<Status>>(new Set(['planned', 'in_progress', 'blocked']));
 const expandedIds = ref<Set<string>>(new Set());
 const worktreeFilter = ref<string | null>(null);
+const viewingArchived = ref(false);
 
 // Auto-refresh state (enabled by default)
 const autoRefresh = ref(true);
@@ -274,6 +275,40 @@ async function handleMoveDown(trackId: string) {
   }
 }
 
+async function handleArchive(trackId: string) {
+  try {
+    await archiveTrack(trackId, true);
+    await loadTracks();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to archive track';
+  }
+}
+
+async function handleUnarchive(trackId: string) {
+  try {
+    await archiveTrack(trackId, false);
+    await loadTracks();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to unarchive track';
+  }
+}
+
+async function handleDelete(trackId: string) {
+  const track = tracks.value.find((t) => t.id === trackId);
+  if (!track) return;
+
+  if (!confirm(`Delete "${track.title}"? This cannot be undone.`)) {
+    return;
+  }
+
+  try {
+    await deleteTrack(trackId);
+    await loadTracks();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to delete track';
+  }
+}
+
 async function handleStopServer() {
   if (confirm('Stop the web server?')) {
     try {
@@ -398,13 +433,18 @@ onUnmounted(() => {
       :expanded-ids="expandedIds"
       :worktree-filter="worktreeFilter"
       :animated-ids="animatedIds"
+      :viewing-archived="viewingArchived"
       @edit="openEditForm"
       @add-child="openCreateForm"
       @move-up="handleMoveUp"
       @move-down="handleMoveDown"
+      @archive="handleArchive"
+      @unarchive="handleUnarchive"
+      @delete="handleDelete"
       @update:status-filters="statusFilters = $event"
       @update:expanded-ids="expandedIds = $event"
       @update:worktree-filter="worktreeFilter = $event"
+      @update:viewing-archived="viewingArchived = $event"
     />
 
     <!-- Form modal -->
