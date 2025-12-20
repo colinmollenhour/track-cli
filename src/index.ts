@@ -7,6 +7,7 @@ import { updateCommand } from './commands/update.js';
 import { statusCommand } from './commands/status.js';
 import { showCommand } from './commands/show.js';
 import { deleteCommand } from './commands/delete.js';
+import { sortCommand } from './commands/sort.js';
 import { mcpStartCommand } from './commands/mcp.js';
 import { webCommand } from './commands/web.js';
 import { commandMetadata, CommandFlag } from './commands/metadata.js';
@@ -127,6 +128,11 @@ commandMetadata.forEach((meta) => {
     case 'delete':
       cmd.action((trackId: string, options: { force?: boolean }) => {
         deleteCommand(trackId, options);
+      });
+      break;
+    case 'sort':
+      cmd.action((trackId: string, position: string, targetId: string) => {
+        sortCommand(trackId, position, targetId);
       });
       break;
     default:

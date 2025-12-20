@@ -81,6 +81,7 @@ export function newCommand(title: string, options: NewCommandOptions): void {
     }
 
     // 7. Build CreateTrackParams
+    const sortOrder = lib.getNextSortOrder(dbPath, parentId);
     const newTrack: CreateTrackParams = {
       id: trackId,
       title: title.trim(),
@@ -89,6 +90,7 @@ export function newCommand(title: string, options: NewCommandOptions): void {
       next_prompt: options.next || '',
       status: 'planned',
       worktree,
+      sort_order: sortOrder,
       created_at: now,
       updated_at: now,
       completed_at: null,

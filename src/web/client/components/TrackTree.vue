@@ -15,6 +15,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   edit: [track: TrackWithDetails];
   addChild: [parentId: string | null];
+  moveUp: [trackId: string];
+  moveDown: [trackId: string];
   'update:statusFilters': [filters: Set<Status>];
   'update:expandedIds': [ids: Set<string>];
   'update:worktreeFilter': [filter: string | null];
@@ -234,6 +236,8 @@ function collapseAll() {
                 :animation-class="getAnimationClass(track.id)"
                 @edit="emit('edit', $event)"
                 @add-child="emit('addChild', $event)"
+                @move-up="emit('moveUp', $event)"
+                @move-down="emit('moveDown', $event)"
               />
             </div>
           </div>
@@ -266,6 +270,8 @@ function collapseAll() {
                     :animation-class="getAnimationClass(child.id)"
                     @edit="emit('edit', $event)"
                     @add-child="emit('addChild', $event)"
+                    @move-up="emit('moveUp', $event)"
+                    @move-down="emit('moveDown', $event)"
                   />
                 </div>
               </div>
@@ -282,6 +288,8 @@ function collapseAll() {
                       :animation-class="getAnimationClass(grandchild.id)"
                       @edit="emit('edit', $event)"
                       @add-child="emit('addChild', $event)"
+                      @move-up="emit('moveUp', $event)"
+                      @move-down="emit('moveDown', $event)"
                     />
                   </div>
                 </div>

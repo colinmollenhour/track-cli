@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { fetchStatus, createTrack, updateTrack } from './api';
+import { fetchStatus, createTrack, updateTrack, moveTrack } from './api';
 import type { TrackWithDetails, CreateTrackParams, UpdateTrackParams, Status } from './api';
 import TrackTree from './components/TrackTree.vue';
 import TrackForm from './components/TrackForm.vue';
@@ -222,6 +222,44 @@ async function handleFormSubmit(data: {
   }
 }
 
+// Get siblings of a track (same parent)
+function getSiblings(trackId: string): TrackWithDetails[] {
+  const track = tracks.value.find((t) => t.id === trackId);
+  if (!track) return [];
+
+  return tracks.value
+    .filter((t) => t.parent_id === track.parent_id)
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
+
+async function handleMoveUp(trackId: string) {
+  try {
+    const siblings = getSiblings(trackId);
+    const index = siblings.findIndex((t) => t.id === trackId);
+    if (index <= 0) return; // Already at top
+
+    const previousSibling = siblings[index - 1];
+    await moveTrack(trackId, previousSibling.id, 'before');
+    await loadTracks();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to move track';
+  }
+}
+
+async function handleMoveDown(trackId: string) {
+  try {
+    const siblings = getSiblings(trackId);
+    const index = siblings.findIndex((t) => t.id === trackId);
+    if (index < 0 || index >= siblings.length - 1) return; // Already at bottom
+
+    const nextSibling = siblings[index + 1];
+    await moveTrack(trackId, nextSibling.id, 'after');
+    await loadTracks();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to move track';
+  }
+}
+
 onMounted(() => {
   loadTracks();
   document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -303,6 +341,8 @@ onUnmounted(() => {
       :animated-ids="animatedIds"
       @edit="openEditForm"
       @add-child="openCreateForm"
+      @move-up="handleMoveUp"
+      @move-down="handleMoveDown"
       @update:status-filters="statusFilters = $event"
       @update:expanded-ids="expandedIds = $event"
       @update:worktree-filter="worktreeFilter = $event"

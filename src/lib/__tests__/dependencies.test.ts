@@ -20,6 +20,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         const track2 = lib.createTrack(dbPath, {
@@ -33,6 +34,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         // Add dependency: TRACK1 blocks TRACK2
@@ -66,6 +68,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -79,6 +82,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -92,6 +96,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -105,6 +110,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         // Add two blockers
@@ -133,6 +139,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -146,6 +153,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         // Add same dependency twice
@@ -174,6 +182,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -187,6 +196,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.addDependency(dbPath, 'A', 'B');
@@ -212,6 +222,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -225,6 +236,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         // Should not throw
@@ -249,6 +261,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -262,6 +275,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         // A blocks B
@@ -288,6 +302,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -301,6 +316,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -314,6 +330,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         // A blocks B, B blocks C
@@ -340,6 +357,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -353,6 +371,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -366,6 +385,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         // A blocks B
@@ -393,6 +413,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         expect(lib.areAllBlockersDone(dbPath, 'A')).toBe(true);
@@ -414,6 +435,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -427,6 +449,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -440,6 +463,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -453,6 +477,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.addDependency(dbPath, 'BLOCKER1', 'BLOCKED');
@@ -477,6 +502,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -490,6 +516,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -503,6 +530,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -516,6 +544,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.addDependency(dbPath, 'BLOCKER1', 'BLOCKED');
@@ -542,6 +571,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         expect(lib.hasBlockers(dbPath, 'A')).toBe(false);
@@ -563,6 +593,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -576,6 +607,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.addDependency(dbPath, 'A', 'B');
@@ -601,6 +633,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         const deps = lib.getAllDependencies(dbPath);
@@ -623,6 +656,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -636,6 +670,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -649,6 +684,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -662,6 +698,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         // A blocks B and C
@@ -705,6 +742,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         lib.createTrack(dbPath, {
@@ -718,6 +756,7 @@ describe('dependency database functions', () => {
           created_at: '2025-01-01T00:00:00Z',
           updated_at: '2025-01-01T00:00:00Z',
           completed_at: null,
+          sort_order: 0,
         });
 
         // Should not throw

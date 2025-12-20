@@ -22,6 +22,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
       ];
 
@@ -46,6 +47,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
         {
           id: 'task456',
@@ -58,6 +60,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:01:00.000Z',
           updated_at: '2025-01-01T00:01:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
       ];
 
@@ -88,6 +91,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
         {
           id: 'feature1',
@@ -100,6 +104,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:01:00.000Z',
           updated_at: '2025-01-01T00:01:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
         {
           id: 'task1',
@@ -112,6 +117,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:02:00.000Z',
           updated_at: '2025-01-01T00:02:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
       ];
 
@@ -136,6 +142,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
         {
           id: 'feature1',
@@ -148,6 +155,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:01:00.000Z',
           updated_at: '2025-01-01T00:01:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
         {
           id: 'feature2',
@@ -160,6 +168,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:02:00.000Z',
           updated_at: '2025-01-01T00:02:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
         {
           id: 'task1',
@@ -172,6 +181,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:03:00.000Z',
           updated_at: '2025-01-01T00:03:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
         {
           id: 'task2',
@@ -184,6 +194,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:04:00.000Z',
           updated_at: '2025-01-01T00:04:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
         {
           id: 'task3',
@@ -196,6 +207,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:05:00.000Z',
           updated_at: '2025-01-01T00:05:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
       ];
 
@@ -240,6 +252,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
       ];
 
@@ -264,6 +277,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
       ];
 
@@ -285,6 +299,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-02T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
       ];
 
@@ -317,6 +332,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
         {
           id: 'blocked',
@@ -329,6 +345,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
       ];
 
@@ -361,6 +378,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
       ];
 
@@ -383,6 +401,7 @@ describe('tree building', () => {
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
           completed_at: null,
+          sort_order: 0,
         },
       ];
 

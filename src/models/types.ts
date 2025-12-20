@@ -20,6 +20,7 @@ export interface Track {
   next_prompt: string;
   status: Status;
   worktree: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -47,6 +48,7 @@ export interface CreateTrackParams {
   next_prompt: string;
   status: Status;
   worktree: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
   completed_at: string | null;

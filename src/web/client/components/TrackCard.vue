@@ -22,6 +22,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   edit: [track: TrackWithDetails];
   addChild: [parentId: string];
+  moveUp: [trackId: string];
+  moveDown: [trackId: string];
 }>();
 
 function getTrackTitle(id: string): string {
@@ -136,7 +138,28 @@ async function copyToClipboard(text: string, type: 'id' | 'title') {
       </div>
 
       <!-- Actions -->
-      <div class="flex gap-2 ml-4 flex-shrink-0">
+      <div class="flex items-center gap-1 ml-4 flex-shrink-0">
+        <!-- Move buttons -->
+        <div class="flex flex-col gap-0.5 mr-2">
+          <button
+            @click="emit('moveUp', track.id)"
+            class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-0.5 rounded"
+            title="Move up"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          <button
+            @click="emit('moveDown', track.id)"
+            class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-0.5 rounded"
+            title="Move down"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
         <button
           @click="emit('edit', track)"
           class="text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded"

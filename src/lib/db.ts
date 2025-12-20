@@ -24,6 +24,7 @@ CREATE TABLE tracks (
   next_prompt TEXT NOT NULL,
   status TEXT NOT NULL,
   worktree TEXT DEFAULT NULL,
+  sort_order INTEGER DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   completed_at TEXT DEFAULT NULL,
@@ -179,6 +180,20 @@ export function migrateDatabase(dbPath: string): void {
       db.exec('ALTER TABLE tracks ADD COLUMN completed_at TEXT DEFAULT NULL');
     }
 
+    // Migrate sort_order column
+    const hasSortOrder = columns.some((col) => col.name === 'sort_order');
+    if (!hasSortOrder) {
+      db.exec('ALTER TABLE tracks ADD COLUMN sort_order INTEGER DEFAULT 0');
+      // Initialize sort_order based on creation order (created_at)
+      db.exec(`
+        WITH ordered AS (
+          SELECT id, ROW_NUMBER() OVER (PARTITION BY parent_id ORDER BY created_at) - 1 as new_order
+          FROM tracks
+        )
+        UPDATE tracks SET sort_order = (SELECT new_order FROM ordered WHERE ordered.id = tracks.id)
+      `);
+    }
+
     // Migrate track_dependencies table
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as Array<{
       name: string;
@@ -205,15 +220,36 @@ export function createTrack(dbPath: string, params: CreateTrackParams): Track {
   return withDatabase(dbPath, (db) => {
     const stmt = db.prepare(`
       INSERT INTO tracks (
-        id, title, parent_id, summary, next_prompt, status, worktree, created_at, updated_at, completed_at
+        id, title, parent_id, summary, next_prompt, status, worktree, sort_order, created_at, updated_at, completed_at
       ) VALUES (
-        @id, @title, @parent_id, @summary, @next_prompt, @status, @worktree, @created_at, @updated_at, @completed_at
+        @id, @title, @parent_id, @summary, @next_prompt, @status, @worktree, @sort_order, @created_at, @updated_at, @completed_at
       )
     `);
 
     stmt.run(params);
 
     return params;
+  });
+}
+
+/**
+ * Get the next sort order for a new track under a given parent.
+ *
+ * @param dbPath - Path to the database file
+ * @param parentId - Parent track ID (null for root level)
+ * @returns The next available sort order
+ */
+export function getNextSortOrder(dbPath: string, parentId: string | null): number {
+  return withDatabase(dbPath, (db) => {
+    const stmt = parentId
+      ? db.prepare(
+          'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM tracks WHERE parent_id = ?'
+        )
+      : db.prepare(
+          'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM tracks WHERE parent_id IS NULL'
+        );
+    const result = (parentId ? stmt.get(parentId) : stmt.get()) as { next_order: number };
+    return result.next_order;
   });
 }
 
@@ -336,14 +372,14 @@ export function addTrackFiles(dbPath: string, trackId: string, filePaths: string
 }
 
 /**
- * Get all tracks from the database.
+ * Get all tracks from the database, ordered by sort_order.
  *
  * @param dbPath - Path to the database file
  * @returns Array of all tracks
  */
 export function getAllTracks(dbPath: string): Track[] {
   return withDatabase(dbPath, (db) => {
-    const stmt = db.prepare('SELECT * FROM tracks');
+    const stmt = db.prepare('SELECT * FROM tracks ORDER BY sort_order');
     return stmt.all() as Track[];
   });
 }
@@ -668,5 +704,89 @@ export function getChildTrackIds(dbPath: string, trackId: string): string[] {
     const stmt = db.prepare('SELECT id FROM tracks WHERE parent_id = ?');
     const rows = stmt.all(trackId) as Array<{ id: string }>;
     return rows.map((row) => row.id);
+  });
+}
+
+/**
+ * Move a track before or after another track (same parent level).
+ *
+ * @param dbPath - Path to the database file
+ * @param trackId - The track to move
+ * @param targetId - The target track to position relative to
+ * @param position - 'before' or 'after' the target
+ */
+export function moveTrack(
+  dbPath: string,
+  trackId: string,
+  targetId: string,
+  position: 'before' | 'after'
+): void {
+  withDatabase(dbPath, (db) => {
+    // Get both tracks
+    const track = db.prepare('SELECT * FROM tracks WHERE id = ?').get(trackId) as Track | undefined;
+    const target = db.prepare('SELECT * FROM tracks WHERE id = ?').get(targetId) as
+      | Track
+      | undefined;
+
+    if (!track || !target) {
+      throw new Error('Track not found');
+    }
+
+    // Ensure they have the same parent
+    if (track.parent_id !== target.parent_id) {
+      throw new Error('Tracks must have the same parent');
+    }
+
+    const parentId = track.parent_id;
+
+    // Get all siblings ordered by sort_order
+    const siblings = (
+      parentId
+        ? db
+            .prepare('SELECT id, sort_order FROM tracks WHERE parent_id = ? ORDER BY sort_order')
+            .all(parentId)
+        : db
+            .prepare(
+              'SELECT id, sort_order FROM tracks WHERE parent_id IS NULL ORDER BY sort_order'
+            )
+            .all()
+    ) as Array<{ id: string; sort_order: number }>;
+
+    // Calculate new order for all siblings
+    const reorder = db.transaction(() => {
+      let newOrder = 0;
+      for (const sibling of siblings) {
+        if (sibling.id === trackId) continue; // Skip the track being moved
+
+        if (sibling.id === targetId) {
+          if (position === 'before') {
+            // Insert moved track before target
+            db.prepare('UPDATE tracks SET sort_order = ? WHERE id = ?').run(newOrder++, trackId);
+          }
+          db.prepare('UPDATE tracks SET sort_order = ? WHERE id = ?').run(newOrder++, sibling.id);
+          if (position === 'after') {
+            // Insert moved track after target
+            db.prepare('UPDATE tracks SET sort_order = ? WHERE id = ?').run(newOrder++, trackId);
+          }
+        } else {
+          db.prepare('UPDATE tracks SET sort_order = ? WHERE id = ?').run(newOrder++, sibling.id);
+        }
+      }
+    });
+
+    reorder();
+  });
+}
+
+/**
+ * Update the sort order of a track directly.
+ *
+ * @param dbPath - Path to the database file
+ * @param trackId - The track to update
+ * @param sortOrder - The new sort order
+ */
+export function updateSortOrder(dbPath: string, trackId: string, sortOrder: number): void {
+  withDatabase(dbPath, (db) => {
+    db.prepare('UPDATE tracks SET sort_order = ? WHERE id = ?').run(sortOrder, trackId);
   });
 }

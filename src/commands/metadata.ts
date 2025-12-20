@@ -309,4 +309,16 @@ export const commandMetadata: CommandMetadata[] = [
     usage: 'track delete <track-id> [-f|--force]',
     example: 'track delete ABC123 --force',
   },
+  {
+    name: 'sort',
+    summary: 'Move a track before or after another track',
+    flags: [],
+    args: [
+      { name: 'track-id', required: true, description: 'Track ID to move' },
+      { name: 'position', required: true, description: 'Position: before or after' },
+      { name: 'target-id', required: true, description: 'Target track ID' },
+    ],
+    usage: 'track sort <track-id> <before|after> <target-id>',
+    example: 'track sort ABC123 before DEF456',
+  },
 ];

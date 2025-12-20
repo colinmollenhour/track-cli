@@ -9,6 +9,7 @@ export interface Track {
   next_prompt: string;
   status: Status;
   worktree: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -104,6 +105,19 @@ export async function addDependency(blockedId: string, blockingId: string): Prom
 export async function removeDependency(blockedId: string, blockingId: string): Promise<void> {
   const response = await fetch(`${API_BASE}/tracks/${blockedId}/dependencies/${blockingId}`, {
     method: 'DELETE',
+  });
+  await handleResponse<{ success: boolean }>(response);
+}
+
+export async function moveTrack(
+  trackId: string,
+  targetId: string,
+  position: 'before' | 'after'
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/tracks/${trackId}/move`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target_id: targetId, position }),
   });
   await handleResponse<{ success: boolean }>(response);
 }

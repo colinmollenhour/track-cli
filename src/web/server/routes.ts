@@ -29,6 +29,11 @@ interface AddDependencyBody {
   blocking_id: string;
 }
 
+interface MoveTrackBody {
+  target_id: string;
+  position: 'before' | 'after';
+}
+
 export function apiRoutes(manager: TrackManager): Hono {
   const api = new Hono();
 
@@ -149,6 +154,35 @@ export function apiRoutes(manager: TrackManager): Hono {
 
     manager.removeDependency(blockingId, blockedId);
     return c.json({ success: true });
+  });
+
+  // POST /api/web/tracks/:id/move - Move track before/after another
+  api.post('/tracks/:id/move', async (c) => {
+    const trackId = c.req.param('id');
+    const body = await c.req.json<MoveTrackBody>();
+
+    if (!manager.trackExists(trackId)) {
+      return c.json({ error: 'Track not found' }, 404);
+    }
+
+    if (!body.target_id || !body.position) {
+      return c.json({ error: 'Missing required fields: target_id, position' }, 400);
+    }
+
+    if (body.position !== 'before' && body.position !== 'after') {
+      return c.json({ error: 'Invalid position: must be "before" or "after"' }, 400);
+    }
+
+    if (!manager.trackExists(body.target_id)) {
+      return c.json({ error: 'Target track not found' }, 404);
+    }
+
+    try {
+      manager.moveTrack(trackId, body.target_id, body.position);
+      return c.json({ success: true });
+    } catch (error) {
+      return c.json({ error: (error as Error).message }, 400);
+    }
   });
 
   return api;

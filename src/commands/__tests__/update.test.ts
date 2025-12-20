@@ -277,7 +277,9 @@ describe('update command', () => {
 
     it('should support all valid statuses', async () => {
       await withTempDir(() => {
-        const statuses = ['planned', 'in_progress', 'done', 'blocked', 'superseded'];
+        // Start with in_progress since new tracks start as 'planned'
+        // Order matters: avoid transition from on_hold to in_progress (blocked by CLI)
+        const statuses = ['in_progress', 'done', 'blocked', 'superseded', 'on_hold', 'planned'];
 
         initCommand('Test');
 
@@ -395,7 +397,9 @@ describe('update command', () => {
         const errors = consoleMock.getErrors();
         expect(errors.some((err) => err.includes('Invalid status: invalid_status'))).toBe(true);
         expect(
-          errors.some((err) => err.includes('planned, in_progress, done, blocked, superseded'))
+          errors.some((err) =>
+            err.includes('planned, in_progress, done, blocked, superseded, on_hold')
+          )
         ).toBe(true);
       });
     });

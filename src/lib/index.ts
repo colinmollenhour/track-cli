@@ -93,14 +93,18 @@ export class TrackManager {
   }): db.Track {
     const now = getCurrentTimestamp();
     const status = params.status ?? 'planned';
+    const parentId = params.parent_id ?? null;
+    const sortOrder = db.getNextSortOrder(this.dbPath, parentId);
+
     const trackParams: db.CreateTrackParams = {
       id: generateId(),
       title: params.title,
-      parent_id: params.parent_id ?? null,
+      parent_id: parentId,
       summary: params.summary,
       next_prompt: params.next_prompt,
       status,
       worktree: params.worktree ?? null,
+      sort_order: sortOrder,
       created_at: now,
       updated_at: now,
       completed_at: status === 'done' || status === 'superseded' ? now : null,
@@ -321,6 +325,17 @@ export class TrackManager {
   getChildTrackIds(trackId: string): string[] {
     return db.getChildTrackIds(this.dbPath, trackId);
   }
+
+  /**
+   * Move a track before or after another track (same parent level).
+   *
+   * @param trackId - The track to move
+   * @param targetId - The target track to position relative to
+   * @param position - 'before' or 'after' the target
+   */
+  moveTrack(trackId: string, targetId: string, position: 'before' | 'after'): void {
+    db.moveTrack(this.dbPath, trackId, targetId, position);
+  }
 }
 
 // Re-export database functions for advanced use cases
@@ -340,4 +355,7 @@ export {
   areAllBlockersDone,
   hasBlockers,
   getChildTrackIds,
+  getNextSortOrder,
+  moveTrack,
+  updateSortOrder,
 } from './db.js';

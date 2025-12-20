@@ -3,8 +3,15 @@ import { isValidStatus, VALID_STATUSES } from '../types.js';
 
 describe('types utilities', () => {
   describe('VALID_STATUSES', () => {
-    it('should contain all 5 status values', () => {
-      expect(VALID_STATUSES).toEqual(['planned', 'in_progress', 'done', 'blocked', 'superseded']);
+    it('should contain all 6 status values', () => {
+      expect(VALID_STATUSES).toEqual([
+        'planned',
+        'in_progress',
+        'done',
+        'blocked',
+        'superseded',
+        'on_hold',
+      ]);
     });
 
     it('should be read-only array', () => {
