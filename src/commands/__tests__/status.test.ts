@@ -38,7 +38,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const jsonOutput = logs.join('\n');
@@ -56,7 +56,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const jsonOutput = JSON.parse(logs.join('\n'));
@@ -87,7 +87,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const jsonOutput = JSON.parse(logs.join('\n'));
@@ -145,7 +145,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const jsonOutput = JSON.parse(logs.join('\n'));
@@ -196,7 +196,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const jsonOutput = JSON.parse(logs.join('\n'));
@@ -230,7 +230,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const jsonOutput = JSON.parse(logs.join('\n'));
@@ -253,7 +253,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: false });
+        statusCommand(undefined, { json: false });
 
         const logs = consoleMock.getLogs();
         const output = logs.join('\n');
@@ -271,7 +271,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: false });
+        statusCommand(undefined, { json: false });
 
         const logs = consoleMock.getLogs();
         const output = logs.join('\n');
@@ -301,7 +301,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: false });
+        statusCommand(undefined, { json: false });
 
         const logs = consoleMock.getLogs();
         const output = logs.join('\n');
@@ -334,7 +334,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: false });
+        statusCommand(undefined, { json: false });
 
         const logs = consoleMock.getLogs();
         const output = logs.join('\n');
@@ -377,7 +377,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: false });
+        statusCommand(undefined, { json: false });
 
         const logs = consoleMock.getLogs();
         const output = logs.join('\n');
@@ -402,7 +402,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: false });
+        statusCommand(undefined, { json: false });
 
         const logs = consoleMock.getLogs();
         const output = logs.join('\n');
@@ -417,7 +417,7 @@ describe('status command', () => {
     it('should exit with error when project not initialized', async () => {
       await withTempDir(() => {
         try {
-          statusCommand({ json: false });
+          statusCommand(undefined, { json: false });
         } catch {
           // Expected to throw due to process.exit mock
         }
@@ -481,7 +481,7 @@ describe('status command', () => {
         exitMock = mockProcessExit();
 
         // Default status (no --all flag)
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const output = JSON.parse(logs.join('\n'));
@@ -528,7 +528,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const output = JSON.parse(logs.join('\n'));
@@ -572,7 +572,7 @@ describe('status command', () => {
         exitMock = mockProcessExit();
 
         // With --all flag
-        statusCommand({ json: true, all: true });
+        statusCommand(undefined, { json: true, all: true });
 
         const logs = consoleMock.getLogs();
         const output = JSON.parse(logs.join('\n'));
@@ -582,7 +582,7 @@ describe('status command', () => {
       });
     });
 
-    it('should always include root track even if it has non-active status', async () => {
+    it('should exclude done root track by default, include with --all', async () => {
       await withTempDir(() => {
         initCommand('Test Project');
         const root = lib.getRootTrack(getDatabasePath());
@@ -604,12 +604,25 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        // Without --all, done root should NOT be included
+        statusCommand(undefined, { json: true });
 
-        const logs = consoleMock.getLogs();
-        const output = JSON.parse(logs.join('\n'));
+        let logs = consoleMock.getLogs();
+        let output = JSON.parse(logs.join('\n'));
 
-        // Root should still be included even though it's done
+        expect(output.tracks.some((t: any) => t.id === root?.id)).toBe(false);
+
+        // With --all, done root SHOULD be included
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        statusCommand(undefined, { json: true, all: true });
+
+        logs = consoleMock.getLogs();
+        output = JSON.parse(logs.join('\n'));
+
         expect(output.tracks.some((t: any) => t.id === root?.id)).toBe(true);
       });
     });
@@ -648,7 +661,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const output = JSON.parse(logs.join('\n'));
@@ -692,7 +705,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: false });
+        statusCommand(undefined, { json: false });
 
         const logs = consoleMock.getLogs();
         const output = logs.join('\n');
@@ -741,7 +754,7 @@ describe('status command', () => {
         exitMock = mockProcessExit();
 
         // Filter by worktree
-        statusCommand({ json: true, worktree: 'feature-a' });
+        statusCommand(undefined, { json: true, worktree: 'feature-a' });
 
         const logs = consoleMock.getLogs();
         const output = JSON.parse(logs.join('\n'));
@@ -773,7 +786,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: false });
+        statusCommand(undefined, { json: false });
 
         const logs = consoleMock.getLogs();
         const output = logs.join('\n');
@@ -803,7 +816,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const output = JSON.parse(logs.join('\n'));
@@ -822,7 +835,7 @@ describe('status command', () => {
         consoleMock = mockConsole();
         exitMock = mockProcessExit();
 
-        statusCommand({ json: true });
+        statusCommand(undefined, { json: true });
 
         const logs = consoleMock.getLogs();
         const output = JSON.parse(logs.join('\n'));

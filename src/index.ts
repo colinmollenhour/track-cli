@@ -87,9 +87,14 @@ commandMetadata.forEach((meta) => {
       );
       break;
     case 'status':
-      cmd.action((options: { json?: boolean; all?: boolean }) => {
-        statusCommand(options);
-      });
+      cmd.action(
+        (
+          trackId: string | undefined,
+          options: { json?: boolean; all?: boolean; worktree?: string | boolean }
+        ) => {
+          statusCommand(trackId, options);
+        }
+      );
       break;
     case 'show':
       cmd.action((trackId: string, options: { json?: boolean }) => {

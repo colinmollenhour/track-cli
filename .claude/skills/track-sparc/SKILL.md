@@ -18,6 +18,32 @@ For general track-cli usage and CLI reference, see [track-basic](../track-basic/
 - When explicitly asked to use SPARC methodology
 - Coordinating work across git worktrees with phased implementation
 
+## CRITICAL RULES
+
+### One Task at a Time
+
+**NEVER tackle the entire project at once.** Work on exactly ONE task at a time:
+
+1. Run `track status` to find the next actionable task (unblocked, not done)
+2. Mark it `in_progress` with `track update <id> --status in_progress --summary "Starting..." --next "First step"`
+3. Complete ALL work for that single task
+4. Mark it `done` with `track update <id> --status done --summary "What was done" --next "Task complete"`
+5. THEN find the next task
+
+### Stop on Errors
+
+**If ANY error occurs, STOP immediately.** Do not continue to the next task:
+
+1. Update the track with error details: `track update <id> --summary "Error: <description>" --next "Fix: <specific fix needed>"`
+2. Either fix the error OR ask the user for help
+3. Only proceed after the error is resolved
+
+### Required Options for `track update`
+
+- Both `--summary` and `--next` are **ALWAYS required** for `track update`
+- There is NO `--note` option - use `--summary` for current state and `--next` for next steps
+- Both should be specific and actionable
+
 ## Core Workflow
 
 ### 0. Check Existing Tracks First (CRITICAL)
@@ -68,7 +94,9 @@ For each major feature, create and execute these phases:
 | **R**efinement    | `Implement:`    | Write code, tests, iterate                           |
 | **C**ompletion    | `Complete:`     | Verify acceptance criteria, finalize                 |
 
-Each phase blocks the next via `--blocks` flag.
+**Dependency rule**: `A --blocks B` means B waits for A. Create tasks first, then add dependencies with `track update <blocker> --blocks <blocked>`.
+
+**IMPORTANT**: The CLI automatically manages `blocked` and `planned` status. NEVER manually set `--status blocked` or `--status planned`. Only use `in_progress`, `done`, or `superseded` manually.
 
 ### 3. Worktree Management
 
@@ -137,17 +165,20 @@ Depends on API Layer.
 ```bash
 track init "Build User Dashboard"
 
-# Phase 1
+# STEP 1: Create all phases first (no dependencies yet)
 track new "Phase 1: API Layer" --summary "Backend endpoints" --next "Start with user endpoint"
 # → abc123
 
-track new "User endpoint" --parent abc123 --summary "GET/PUT /user" --next "Define schema"
-track new "Preferences endpoint" --parent abc123 --summary "GET/PUT /prefs" --next "Define schema"
-
-# Phase 2 (blocked by Phase 1)
-track new "Phase 2: UI Components" --summary "Frontend components" --next "Wait for API" --blocks abc123
+track new "Phase 2: UI Components" --summary "Frontend components" --next "Waiting for API"
 # → def456
 
+# STEP 2: Add dependency (Phase 1 blocks Phase 2)
+track update abc123 --blocks def456 \
+  --summary "Backend endpoints" --next "Start with user endpoint"
+
+# STEP 3: Create child tasks
+track new "User endpoint" --parent abc123 --summary "GET/PUT /user" --next "Define schema"
+track new "Preferences endpoint" --parent abc123 --summary "GET/PUT /prefs" --next "Define schema"
 track new "Dashboard layout" --parent def456 --summary "Main layout" --next "Create component"
 track new "Settings panel" --parent def456 --summary "User settings UI" --next "Create component"
 ```

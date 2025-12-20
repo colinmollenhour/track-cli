@@ -17,10 +17,11 @@ export interface StatusCommandOptions {
 /**
  * Display the current state of the project and all tracks.
  *
+ * @param trackId - Optional track ID to show status for (with descendants)
  * @param options - Command options (json flag)
  * @throws Error if project doesn't exist or database query fails
  */
-export function statusCommand(options: StatusCommandOptions): void {
+export function statusCommand(trackId: string | undefined, options: StatusCommandOptions): void {
   // 1. Validate project exists
   if (!projectExists()) {
     console.error('Error: No track project found in this directory.');
@@ -31,7 +32,56 @@ export function statusCommand(options: StatusCommandOptions): void {
   try {
     const dbPath = getDatabasePath();
 
-    // 2. Determine worktree filter
+    // 2. If a specific track ID is provided, show that track and its descendants
+    if (trackId) {
+      // Validate track exists
+      if (!lib.trackExists(dbPath, trackId)) {
+        console.error(`Error: Unknown track id: ${trackId}`);
+        process.exit(1);
+      }
+
+      // Get the specified track and all its descendants
+      const allTracks = options.all
+        ? lib.getAllTracks(dbPath)
+        : lib.getTracksByStatus(dbPath, ACTIVE_STATUSES);
+
+      // Build descendant set
+      const descendantIds = new Set<string>();
+      const collectDescendants = (id: string) => {
+        descendantIds.add(id);
+        const children = allTracks.filter((t) => t.parent_id === id);
+        for (const child of children) {
+          collectDescendants(child.id);
+        }
+      };
+      collectDescendants(trackId);
+
+      // Filter to only include the specified track and its descendants
+      let tracks = allTracks.filter((t) => descendantIds.has(t.id));
+
+      // Always include the target track even if it's not active
+      const targetTrack = lib.getTrack(dbPath, trackId);
+      if (targetTrack && !tracks.find((t) => t.id === trackId)) {
+        tracks = [targetTrack, ...tracks];
+      }
+
+      // Load file and dependency maps
+      const fileMap = lib.getAllTrackFiles(dbPath);
+      const dependencyMap = lib.getAllDependencies(dbPath);
+
+      // Build tree structure
+      const tracksWithDetails = buildTrackTree(tracks, fileMap, dependencyMap);
+
+      // Output in requested format
+      if (options.json) {
+        outputJson(tracksWithDetails);
+      } else {
+        outputHuman(tracksWithDetails, trackId);
+      }
+      return;
+    }
+
+    // 3. Determine worktree filter
     let worktreeFilter: string | null = null;
     if (options.worktree !== undefined) {
       if (options.worktree === true) {
@@ -47,34 +97,38 @@ export function statusCommand(options: StatusCommandOptions): void {
       }
     }
 
-    // 3. Load tracks from database (filtered by default, all with --all flag)
+    // 4. Load tracks from database (filtered by default, all with --all flag)
     let tracks = options.all
       ? lib.getAllTracks(dbPath)
       : lib.getTracksByStatus(dbPath, ACTIVE_STATUSES);
 
-    // 4. Apply worktree filter if specified
+    // 5. Apply worktree filter if specified
     if (worktreeFilter) {
       tracks = tracks.filter((t) => t.worktree === worktreeFilter);
     }
 
-    // 5. Always include root track for project context, even if filtered
+    // 6. Include root track for project context, but only if it's active
     if (!options.all) {
       const rootTrack = lib.getRootTrack(dbPath);
-      if (rootTrack && !tracks.find((t) => t.id === rootTrack.id)) {
+      if (
+        rootTrack &&
+        !tracks.find((t) => t.id === rootTrack.id) &&
+        ACTIVE_STATUSES.includes(rootTrack.status)
+      ) {
         tracks = [rootTrack, ...tracks];
       }
     }
 
-    // 6. Load all track-file associations
+    // 7. Load all track-file associations
     const fileMap = lib.getAllTrackFiles(dbPath);
 
-    // 7. Load all dependencies
+    // 8. Load all dependencies
     const dependencyMap = lib.getAllDependencies(dbPath);
 
-    // 8. Build tree structure with derived fields
+    // 9. Build tree structure with derived fields
     const tracksWithDetails = buildTrackTree(tracks, fileMap, dependencyMap);
 
-    // 9. Output in requested format
+    // 10. Output in requested format
     if (options.json) {
       outputJson(tracksWithDetails);
     } else {
@@ -101,12 +155,17 @@ function outputJson(tracks: TrackWithDetails[]): void {
 
 /**
  * Output tracks in human-readable tree format.
+ *
+ * @param tracks - Tracks to display
+ * @param startFromId - Optional track ID to start the tree from (instead of root)
  */
-function outputHuman(tracks: TrackWithDetails[]): void {
-  // Find the root track (project)
-  const rootTrack = tracks.find((t) => t.parent_id === null);
+function outputHuman(tracks: TrackWithDetails[], startFromId?: string): void {
+  // Find the starting track
+  const startTrack = startFromId
+    ? tracks.find((t) => t.id === startFromId)
+    : tracks.find((t) => t.parent_id === null);
 
-  if (!rootTrack) {
+  if (!startTrack) {
     console.log('No tracks found.');
     return;
   }
@@ -120,12 +179,16 @@ function outputHuman(tracks: TrackWithDetails[]): void {
   // Get terminal width once for the entire output
   const terminalWidth = getTerminalWidth();
 
-  // Print project header
-  console.log(`Project: ${rootTrack.title} (${rootTrack.id})`);
+  // Print header
+  if (startFromId) {
+    console.log(`Track: ${startTrack.title} (${startTrack.id})`);
+  } else {
+    console.log(`Project: ${startTrack.title} (${startTrack.id})`);
+  }
   console.log();
 
-  // Print tree starting from root
-  printTrack(rootTrack, trackMap, [], true, terminalWidth);
+  // Print tree starting from start track
+  printTrack(startTrack, trackMap, [], true, terminalWidth);
 }
 
 /**

@@ -167,7 +167,7 @@ export const commandMetadata: CommandMetadata[] = [
   },
   {
     name: 'status',
-    summary: 'Display the current state of the project and all tracks',
+    summary: 'Display the current state of the project, a specific track, or all tracks',
     flags: [
       {
         name: 'json',
@@ -194,9 +194,15 @@ export const commandMetadata: CommandMetadata[] = [
         cliFlag: '-w, --worktree [name]',
       },
     ],
-    args: [],
-    usage: 'track status [--json] [-a|--all] [-w|--worktree [name]]',
-    example: 'track status --json --all',
+    args: [
+      {
+        name: 'track-id',
+        required: false,
+        description: 'Optional track ID to show status for (with descendants)',
+      },
+    ],
+    usage: 'track status [track-id] [--json] [-a|--all] [-w|--worktree [name]]',
+    example: 'track status abc123 --json',
   },
   {
     name: 'show',

@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { handleRequest } from '../server.js';
 import { MAX_PAYLOAD_BYTES } from '../constants.js';
+import { mkdtempSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 describe('MCP server handler', () => {
+  // Store original cwd to restore after tests that change it
+  const originalCwd = process.cwd();
   it('serves quickstart with envelope fields', () => {
     const res = handleRequest('/mcp/track/quickstart');
     expect(res.status).toBe(200);
@@ -79,10 +84,18 @@ describe('MCP server handler', () => {
   });
 
   it('returns 404 for status when no database exists', () => {
-    const res = handleRequest('/mcp/track/status');
-    expect(res.status).toBe(404);
-    const body = JSON.parse(res.body) as { error: string };
-    expect(body.error).toContain('No track database found');
+    // Run in a temp directory without a .track database
+    const tempDir = mkdtempSync(join(tmpdir(), 'track-test-'));
+    process.chdir(tempDir);
+    try {
+      const res = handleRequest('/mcp/track/status');
+      expect(res.status).toBe(404);
+      const body = JSON.parse(res.body) as { error: string };
+      expect(body.error).toContain('No track database found');
+    } finally {
+      process.chdir(originalCwd);
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('returns 404 for unknown route', () => {

@@ -9,9 +9,15 @@ Patterns for recognizing and converting markdown specifications into track struc
 ```markdown
 # Project Title          → track init "Project Title"
 ## Phase 1: Setup        → track new "Phase 1: Setup" (feature under root)
-## Phase 2: Core         → track new "Phase 2: Core" --blocks <phase1>
+## Phase 2: Core         → track new "Phase 2: Core" (create first, add deps later)
 ### Task A               → track new "Task A" --parent <phase2>
 ### Task B               → track new "Task B" --parent <phase2>
+```
+
+**Add dependencies AFTER creating tasks:**
+```bash
+# Phase 1 blocks Phase 2 (Phase 2 waits for Phase 1)
+track update <phase1-id> --blocks <phase2-id> --summary "..." --next "..."
 ```
 
 **Rules**:
@@ -42,8 +48,15 @@ Patterns for recognizing and converting markdown specifications into track struc
 ```markdown
 ## Feature Name
 1. First step            → track new "First step" --parent <feature>
-2. Second step           → track new "Second step" --blocks <step1>
-3. Third step            → track new "Third step" --blocks <step2>
+2. Second step           → track new "Second step" --parent <feature>
+3. Third step            → track new "Third step" --parent <feature>
+```
+
+**Add sequential dependencies AFTER creating all steps:**
+```bash
+# Step 1 blocks Step 2, Step 2 blocks Step 3
+track update <step1-id> --blocks <step2-id> --summary "..." --next "..."
+track update <step2-id> --blocks <step3-id> --summary "..." --next "..."
 ```
 
 Numbered lists imply sequential dependencies.
@@ -54,13 +67,15 @@ Numbered lists imply sequential dependencies.
 
 | Pattern | Interpretation |
 |---------|---------------|
-| "after X is complete" | Current blocks X |
-| "depends on X" | Current blocks X |
-| "requires X" | Current blocks X |
-| "blocked by X" | X blocks current |
-| "once X is done" | Current blocks X |
-| "prerequisite: X" | Current blocks X |
-| "before starting Y" | Current blocks Y |
+| "after X is complete" | X blocks current (current waits for X) |
+| "depends on X" | X blocks current (current waits for X) |
+| "requires X" | X blocks current (current waits for X) |
+| "blocked by X" | X blocks current (current waits for X) |
+| "once X is done" | X blocks current (current waits for X) |
+| "prerequisite: X" | X blocks current (current waits for X) |
+| "before starting Y" | Current blocks Y (Y waits for current) |
+
+**Remember**: `A --blocks B` means B waits for A. Update the BLOCKER with `--blocks <blocked-id>`.
 
 ### Implicit Dependencies
 
@@ -77,7 +92,10 @@ Build the REST API endpoints.
 Depends on Phase 1 database setup.
 ```
 
-Extract: "Phase 2: API Layer" `--blocks` "Phase 1" (by name matching)
+Extract: Phase 1 blocks Phase 2. After creating both, run:
+```bash
+track update <phase1-id> --blocks <phase2-id> --summary "..." --next "..."
+```
 
 ## Acceptance Criteria Patterns
 
@@ -172,130 +190,126 @@ After payment is complete.
 ```bash
 # Initialize project
 track init "E-Commerce Checkout System"
-# Returns: root_id (e.g., abc000)
 
-# Phase 1: Cart Management
+# STEP 1: Create ALL phases first (no dependencies yet)
 track new "Phase 1: Cart Management" \
-  --summary "Handle shopping cart operations. Acceptance: items persist, totals update real-time" \
-  --next "Start with SPARC Specification phase"
-# Returns: phase1_id (e.g., abc111)
+  --summary "Handle shopping cart operations" \
+  --next "Start with cart specification"
+# → abc111
 
-# Phase 1 SPARC tasks
-track new "Spec: Cart Management" \
-  --parent abc111 \
-  --summary "Define cart requirements" \
-  --next "Document: item storage, persistence strategy, calculation rules"
-# Returns: spec1_id
-
-track new "Pseudocode: Cart Management" \
-  --parent abc111 \
-  --summary "Design cart algorithms" \
-  --next "Outline: add/remove/update operations, total calculation" \
-  --blocks $spec1_id
-
-track new "Architecture: Cart Management" \
-  --parent abc111 \
-  --summary "Define cart file structure" \
-  --next "Identify files: models, services, API routes" \
-  --blocks $pseudo1_id
-
-track new "Implement: Cart Management" \
-  --parent abc111 \
-  --summary "Build cart functionality" \
-  --next "Implement cart service and API" \
-  --blocks $arch1_id
-
-track new "Complete: Cart Management" \
-  --parent abc111 \
-  --summary "Verify cart acceptance criteria" \
-  --next "Test: persistence, real-time updates" \
-  --blocks $impl1_id
-
-# Phase 1 specific tasks (under implementation or as siblings)
-track new "Add items to cart" \
-  --parent abc111 \
-  --summary "POST /cart/items endpoint" \
-  --next "Define request schema"
-
-track new "Remove items from cart" \
-  --parent abc111 \
-  --summary "DELETE /cart/items/:id endpoint" \
-  --next "Define response handling"
-
-track new "Update quantities" \
-  --parent abc111 \
-  --summary "PATCH /cart/items/:id endpoint" \
-  --next "Handle validation"
-
-track new "Calculate totals" \
-  --parent abc111 \
-  --summary "Cart total calculation service" \
-  --next "Handle discounts, taxes"
-
-# Phase 2: Payment Processing (blocks Phase 1)
 track new "Phase 2: Payment Processing" \
-  --summary "Integrate with payment gateway. Acceptance: successful payments create orders, errors shown clearly" \
-  --next "Blocked until Cart Management complete" \
-  --blocks abc111
-# Returns: phase2_id (e.g., abc222)
+  --summary "Integrate with payment gateway" \
+  --next "Waiting for Phase 1"
+# → abc222
 
-# Phase 2 SPARC and tasks...
-# (similar pattern)
-
-# Phase 3: Order Fulfillment (blocks Phase 2)
 track new "Phase 3: Order Fulfillment" \
   --summary "Handle post-payment workflow" \
-  --next "Blocked until Payment Processing complete" \
-  --blocks abc222
-# Returns: phase3_id (e.g., abc333)
+  --next "Waiting for Phase 2"
+# → abc333
+
+# STEP 2: Add phase dependencies (blocker --blocks blocked)
+# Phase 1 blocks Phase 2 (Phase 2 waits for Phase 1)
+track update abc111 --blocks abc222 \
+  --summary "Handle shopping cart operations" \
+  --next "Start with cart specification"
+
+# Phase 2 blocks Phase 3 (Phase 3 waits for Phase 2)
+track update abc222 --blocks abc333 \
+  --summary "Integrate with payment gateway" \
+  --next "Waiting for Phase 1"
+
+# STEP 3: Create SPARC tasks for Phase 1 (no dependencies yet)
+track new "Spec: Cart" --parent abc111 \
+  --summary "Define cart requirements" \
+  --next "Document storage, persistence, calculations"
+# → spec1
+
+track new "Pseudocode: Cart" --parent abc111 \
+  --summary "Design cart algorithms" \
+  --next "Waiting for Spec"
+# → pseudo1
+
+track new "Architecture: Cart" --parent abc111 \
+  --summary "Define cart file structure" \
+  --next "Waiting for Pseudocode"
+# → arch1
+
+track new "Implement: Cart" --parent abc111 \
+  --summary "Build cart functionality" \
+  --next "Waiting for Architecture"
+# → impl1
+
+track new "Complete: Cart" --parent abc111 \
+  --summary "Verify acceptance criteria" \
+  --next "Waiting for Implementation"
+# → complete1
+
+# STEP 4: Add SPARC task dependencies
+track update spec1 --blocks pseudo1 \
+  --summary "Define cart requirements" --next "Document storage, persistence, calculations"
+track update pseudo1 --blocks arch1 \
+  --summary "Design cart algorithms" --next "Waiting for Spec"
+track update arch1 --blocks impl1 \
+  --summary "Define cart file structure" --next "Waiting for Pseudocode"
+track update impl1 --blocks complete1 \
+  --summary "Build cart functionality" --next "Waiting for Architecture"
 ```
 
 ## Template: SPARC Task Creation
 
-For any feature, create this standard set:
+For any feature, create all tasks first, then add dependencies:
 
 ```bash
 FEATURE_ID="<feature-id>"
 FEATURE_NAME="<Feature Name>"
 
-# Specification
+# STEP 1: Create all SPARC tasks (no dependencies yet)
 SPEC_ID=$(track new "Spec: $FEATURE_NAME" \
   --parent $FEATURE_ID \
   --summary "Define requirements and acceptance criteria" \
   --next "Document inputs, outputs, constraints, edge cases" \
   | grep -oP 'Created track: \K\w+')
 
-# Pseudocode
 PSEUDO_ID=$(track new "Pseudocode: $FEATURE_NAME" \
   --parent $FEATURE_ID \
   --summary "Design implementation approach" \
-  --next "Write pseudocode, plan data structures, error handling" \
-  --blocks $SPEC_ID \
+  --next "Waiting for Spec" \
   | grep -oP 'Created track: \K\w+')
 
-# Architecture
 ARCH_ID=$(track new "Architecture: $FEATURE_NAME" \
   --parent $FEATURE_ID \
   --summary "Define file structure and interfaces" \
-  --next "Identify files, define types, plan integration" \
-  --blocks $PSEUDO_ID \
+  --next "Waiting for Pseudocode" \
   | grep -oP 'Created track: \K\w+')
 
-# Implementation
 IMPL_ID=$(track new "Implement: $FEATURE_NAME" \
   --parent $FEATURE_ID \
   --summary "Write code and tests" \
-  --next "Implement following architecture plan" \
-  --blocks $ARCH_ID \
+  --next "Waiting for Architecture" \
   | grep -oP 'Created track: \K\w+')
 
-# Completion
 COMPLETE_ID=$(track new "Complete: $FEATURE_NAME" \
   --parent $FEATURE_ID \
   --summary "Verify acceptance criteria" \
-  --next "Run final verification" \
-  --blocks $IMPL_ID \
+  --next "Waiting for Implementation" \
   | grep -oP 'Created track: \K\w+')
+
+# STEP 2: Add sequential dependencies (blocker --blocks blocked)
+track update $SPEC_ID --blocks $PSEUDO_ID \
+  --summary "Define requirements and acceptance criteria" \
+  --next "Document inputs, outputs, constraints, edge cases"
+
+track update $PSEUDO_ID --blocks $ARCH_ID \
+  --summary "Design implementation approach" \
+  --next "Waiting for Spec"
+
+track update $ARCH_ID --blocks $IMPL_ID \
+  --summary "Define file structure and interfaces" \
+  --next "Waiting for Pseudocode"
+
+track update $IMPL_ID --blocks $COMPLETE_ID \
+  --summary "Write code and tests" \
+  --next "Waiting for Architecture"
 ```
 
 ## Handling Ambiguity
@@ -343,8 +357,10 @@ If features seem to overlap:
 | `### Subsection` | `track new "Subsection" --parent <section>` |
 | `- Item` | `track new "Item" --parent <current>` |
 | `1. First` | `track new "First"` |
-| `2. Second` | `track new "Second" --blocks <first>` |
+| `2. Second` | `track new "Second"`, then `track update <first> --blocks <second>` |
 | `- [ ] Todo` | `track new "Todo"` (planned) |
 | `- [x] Done` | `track new "Done" --status done` |
-| "depends on X" | `--blocks <X>` |
+| "depends on X" | Create both, then `track update <X> --blocks <current>` |
 | "Acceptance:" list | Include in `--summary` or `--next` |
+
+**Remember**: `A --blocks B` means B waits for A. The BLOCKER gets the `--blocks` flag.

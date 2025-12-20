@@ -52,6 +52,29 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
         })()
     : 'in_progress';
 
+  // 3b. Validate: cannot set non-final status if any ancestor is in a final state
+  const FINAL_STATUSES: Status[] = ['done', 'superseded'];
+  const NON_FINAL_STATUSES: Status[] = ['planned', 'in_progress', 'blocked'];
+
+  if (NON_FINAL_STATUSES.includes(status)) {
+    // Check all ancestors for final status
+    const track = lib.getTrack(dbPath, trackId);
+    let parentId = track?.parent_id;
+
+    while (parentId) {
+      const parent = lib.getTrack(dbPath, parentId);
+      if (parent && FINAL_STATUSES.includes(parent.status)) {
+        console.error(`Error: Cannot set status to '${status}'.`);
+        console.error(
+          `Parent track '${parent.title}' (${parent.id}) is '${parent.status}'.`
+        );
+        console.error('A sub-task cannot be active when its parent is done or superseded.');
+        process.exit(1);
+      }
+      parentId = parent?.parent_id ?? null;
+    }
+  }
+
   try {
     // 4. Build UpdateTrackParams
     const updateParams: UpdateTrackParams = {
@@ -140,6 +163,7 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
 
     // 10. Handle status cascade when marked "done"
     const unblockedTracks: string[] = [];
+    const supersededTracks: string[] = [];
     if (status === 'done') {
       // Get all tracks this one blocks
       const blockedByThis = lib.getBlockedBy(dbPath, trackId);
@@ -165,6 +189,36 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
           unblockedTracks.push(blockedId);
         }
       }
+
+      // 10b. Auto-supersede active descendant tasks
+      // When a parent is marked done, any planned/in_progress/blocked children become superseded
+      const allTracks = lib.getAllTracks(dbPath);
+      const activeStatuses = ['planned', 'in_progress', 'blocked'];
+
+      // Collect all descendant IDs
+      const descendantIds = new Set<string>();
+      const collectDescendants = (parentId: string) => {
+        const children = allTracks.filter((t) => t.parent_id === parentId);
+        for (const child of children) {
+          descendantIds.add(child.id);
+          collectDescendants(child.id);
+        }
+      };
+      collectDescendants(trackId);
+
+      // Supersede any active descendants
+      for (const descId of descendantIds) {
+        const descTrack = allTracks.find((t) => t.id === descId);
+        if (descTrack && activeStatuses.includes(descTrack.status)) {
+          lib.updateTrack(dbPath, descId, {
+            summary: descTrack.summary,
+            next_prompt: 'Parent marked done - task superseded',
+            status: 'superseded',
+            updated_at: getCurrentTimestamp(),
+          });
+          supersededTracks.push(descId);
+        }
+      }
     }
 
     // 11. Success message
@@ -188,6 +242,9 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
     }
     if (unblockedTracks.length > 0) {
       console.log(`Unblocked tracks: ${unblockedTracks.join(', ')}`);
+    }
+    if (supersededTracks.length > 0) {
+      console.log(`Superseded sub-tasks: ${supersededTracks.join(', ')}`);
     }
   } catch (error) {
     console.error('Error: Failed to update track.');

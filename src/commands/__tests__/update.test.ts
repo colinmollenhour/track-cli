@@ -890,4 +890,269 @@ describe('update command', () => {
       });
     });
   });
+
+  describe('auto-supersede on parent done', () => {
+    it('should supersede active child tasks when parent marked done', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create parent task
+        newCommand('Parent Task', { summary: 'Parent', next: 'Do parent' });
+        const parentId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create child tasks with different statuses
+        newCommand('Child Planned', { summary: 'Planned', next: 'Do', parent: parentId });
+        const childPlannedId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        newCommand('Child InProgress', { summary: 'InProgress', next: 'Do', parent: parentId });
+        const childInProgressId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Set one child to in_progress
+        updateCommand(childInProgressId, {
+          summary: 'Working',
+          next: 'Continue',
+          status: 'in_progress',
+        });
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create a child that's already done (should not be superseded)
+        newCommand('Child Done', { summary: 'Done', next: 'Done', parent: parentId });
+        const childDoneId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        updateCommand(childDoneId, {
+          summary: 'Completed',
+          next: '',
+          status: 'done',
+        });
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Mark parent as done
+        updateCommand(parentId, {
+          summary: 'Parent completed',
+          next: '',
+          status: 'done',
+        });
+
+        const logs = consoleMock.getLogs();
+        expect(logs.some((log) => log.includes('Superseded sub-tasks'))).toBe(true);
+
+        // Check child statuses
+        const childPlanned = lib.getTrack(getDatabasePath(), childPlannedId);
+        const childInProgress = lib.getTrack(getDatabasePath(), childInProgressId);
+        const childDone = lib.getTrack(getDatabasePath(), childDoneId);
+
+        expect(childPlanned?.status).toBe('superseded');
+        expect(childInProgress?.status).toBe('superseded');
+        expect(childDone?.status).toBe('done'); // Should NOT be superseded
+      });
+    });
+
+    it('should supersede grandchildren when grandparent marked done', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create grandparent
+        newCommand('Grandparent', { summary: 'GP', next: 'Do' });
+        const grandparentId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create parent under grandparent
+        newCommand('Parent', { summary: 'P', next: 'Do', parent: grandparentId });
+        const parentId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create grandchild under parent
+        newCommand('Grandchild', { summary: 'GC', next: 'Do', parent: parentId });
+        const grandchildId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Mark grandparent as done
+        updateCommand(grandparentId, {
+          summary: 'Done',
+          next: '',
+          status: 'done',
+        });
+
+        // Both parent and grandchild should be superseded
+        const parent = lib.getTrack(getDatabasePath(), parentId);
+        const grandchild = lib.getTrack(getDatabasePath(), grandchildId);
+
+        expect(parent?.status).toBe('superseded');
+        expect(grandchild?.status).toBe('superseded');
+      });
+    });
+
+    it('should block reactivating child when parent is done', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create parent task
+        newCommand('Parent', { summary: 'Parent', next: 'Do' });
+        const parentId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create child task
+        newCommand('Child', { summary: 'Child', next: 'Do', parent: parentId });
+        const childId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Mark parent as done (child becomes superseded)
+        updateCommand(parentId, {
+          summary: 'Done',
+          next: '',
+          status: 'done',
+        });
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Try to reactivate the child - should fail
+        try {
+          updateCommand(childId, {
+            summary: 'Trying to reactivate',
+            next: 'Work on it',
+            status: 'in_progress',
+          });
+        } catch {
+          // Expected
+        }
+
+        expect(exitMock.wasExitCalled()).toBe(true);
+        expect(exitMock.getExitCode()).toBe(1);
+
+        const errors = consoleMock.getErrors();
+        expect(errors.some((err) => err.includes('Cannot set status'))).toBe(true);
+        expect(errors.some((err) => err.includes('parent is done or superseded'))).toBe(true);
+      });
+    });
+
+    it('should block setting planned status when ancestor is superseded', async () => {
+      await withTempDir(() => {
+        initCommand('Test');
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create grandparent
+        newCommand('Grandparent', { summary: 'GP', next: 'Do' });
+        const grandparentId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create parent under grandparent
+        newCommand('Parent', { summary: 'P', next: 'Do', parent: grandparentId });
+        const parentId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Create child under parent
+        newCommand('Child', { summary: 'C', next: 'Do', parent: parentId });
+        const childId = extractTrackId(consoleMock.getLogs());
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Mark grandparent as superseded
+        updateCommand(grandparentId, {
+          summary: 'Superseded',
+          next: 'N/A',
+          status: 'superseded',
+        });
+
+        consoleMock.restore();
+        exitMock.restore();
+        consoleMock = mockConsole();
+        exitMock = mockProcessExit();
+
+        // Try to set child to planned - should fail because grandparent is superseded
+        try {
+          updateCommand(childId, {
+            summary: 'Trying to plan',
+            next: 'Plan it',
+            status: 'planned',
+          });
+        } catch {
+          // Expected
+        }
+
+        expect(exitMock.wasExitCalled()).toBe(true);
+        expect(exitMock.getExitCode()).toBe(1);
+      });
+    });
+  });
 });

@@ -50,10 +50,10 @@ track new "Login endpoint" \
   --next "Define request/response schema" \
   --file src/routes/auth.ts
 
-# Create with dependency (blocks another track)
+# Dependencies are added via update (see Dependencies section below)
 track new "Frontend auth" \
   --summary "Auth UI components" \
-  --blocks abc123  # Blocked until this new track is done
+  --next "Waiting for backend auth"
 
 # Create with multiple files
 track new "Database models" \
@@ -71,13 +71,15 @@ track update <track-id> [options]
 
 | Option | Description |
 |--------|-------------|
-| `--summary <text>` | Update summary |
-| `--next <text>` | Update next steps |
+| `--summary <text>` | Update summary (**REQUIRED**) |
+| `--next <text>` | Update next steps (**REQUIRED**) |
 | `--status <value>` | Change status (see Status Values) |
 | `--file <path>` | Add file association (repeatable) |
 | `--blocks <id>` | Add dependency (this blocks given track) |
 | `--unblocks <id>` | Remove dependency |
 | `--worktree <name>` | Set worktree (use `-` to unset) |
+
+**Note**: Both `--summary` and `--next` are **ALWAYS REQUIRED** for `track update`. There is NO `--note` option.
 
 ### Examples
 
@@ -89,7 +91,9 @@ track update abc123 \
   --status in_progress
 
 # Mark complete (triggers dependency cascade)
-track update abc123 --status done
+track update abc123 --status done \
+  --summary "Login and logout endpoints implemented" \
+  --next "Task complete, dependent tasks now unblocked"
 
 # Add dependency
 track update def456 --blocks abc123
@@ -112,8 +116,14 @@ track update abc123 \
 ## Viewing Status
 
 ```bash
-track status [options]
+track status [track-id] [options]
 ```
+
+### Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `track-id` | Optional track ID to show status for (with descendants) |
 
 ### Options
 
@@ -124,14 +134,22 @@ track status [options]
 | `--worktree` | Filter to current worktree (auto-detected) |
 | `--worktree <name>` | Filter to named worktree |
 
+**Note**: By default, done/superseded tracks (including super tracks) are hidden. Use `--all` to include them.
+
 ### Examples
 
 ```bash
 # Human-readable tree (active tracks only)
 track status
 
+# Show a specific track and its descendants
+track status abc123
+
 # JSON output for parsing
 track status --json
+
+# JSON output for a specific track
+track status abc123 --json
 
 # Include completed tracks
 track status --all
@@ -197,15 +215,17 @@ track show abc123 --json
 
 ## Status Values
 
-| Status | Description | Active? |
-|--------|-------------|---------|
-| `planned` | Not started yet | Yes |
-| `in_progress` | Currently working on it | Yes |
-| `blocked` | Waiting on dependencies | Yes |
-| `done` | Completed | No |
-| `superseded` | Replaced by different approach | No |
+| Status | Description | Active? | Set Manually? |
+|--------|-------------|---------|---------------|
+| `planned` | Not started yet | Yes | **NO** - auto-managed |
+| `in_progress` | Currently working on it | Yes | Yes |
+| `blocked` | Waiting on dependencies | Yes | **NO** - auto-managed |
+| `done` | Completed | No | Yes |
+| `superseded` | Replaced by different approach | No | Yes |
 
 **Active statuses** are shown by default in `track status`. Use `--all` to see inactive.
+
+**IMPORTANT**: `blocked` and `planned` are automatically managed by the CLI through `--blocks` and `--unblocks`. Never set these manually.
 
 ## Track Kinds (Derived)
 
@@ -219,14 +239,21 @@ Kinds are automatically derived from hierarchy:
 
 ## Dependencies
 
+**Remember**: `A --blocks B` means B waits for A. The BLOCKER gets the `--blocks` flag.
+
 ### Creating Dependencies
 
 ```bash
-# When creating a new track
-track new "Phase 2" --blocks <phase1-id>
+# CORRECT: Create tasks first, then add dependencies
+track new "Phase 1" --summary "..." --next "..."
+# → phase1-id
 
-# Adding to existing track
-track update <task-id> --blocks <other-id>
+track new "Phase 2" --summary "..." --next "Waiting for Phase 1"
+# → phase2-id
+
+# Phase 1 blocks Phase 2 (Phase 2 waits for Phase 1)
+track update <phase1-id> --blocks <phase2-id> \
+  --summary "..." --next "..."
 ```
 
 ### Dependency Behavior

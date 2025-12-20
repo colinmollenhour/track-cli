@@ -2,6 +2,44 @@
 
 Detailed guide for executing the SPARC methodology with track-cli.
 
+## CRITICAL RULES
+
+### One Task at a Time
+
+**NEVER tackle the entire project at once.** Work on exactly ONE task at a time:
+
+1. Run `track status` to find the next actionable task (unblocked, not done)
+2. Mark it `in_progress` with `track update <id> --status in_progress --summary "Starting..." --next "First step"`
+3. Complete ALL work for that single task
+4. Mark it `done` with `track update <id> --status done --summary "What was done" --next "Task complete"`
+5. THEN find the next task
+
+### Stop on Errors
+
+**If ANY error occurs, STOP immediately.** Do not continue to the next task:
+
+1. Update the track with error details: `track update <id> --summary "Error: <description>" --next "Fix: <specific fix needed>"`
+2. Either fix the error OR ask the user for help
+3. Only proceed after the error is resolved
+
+### Required Options for `track update`
+
+- Both `--summary` and `--next` are **ALWAYS required** for `track update`
+- There is NO `--note` option - use `--summary` for current state and `--next` for next steps
+- Both should be specific and actionable
+
+### Automatic Status Management (DO NOT OVERRIDE)
+
+**The CLI automatically manages `blocked` and `planned` status. NEVER manually set these.**
+
+- When you add `--blocks`: blocked task automatically becomes `blocked`
+- When blocker is marked `done`: blocked task automatically becomes `planned`
+
+**Only use these statuses manually:**
+- `in_progress` - when starting work on a task
+- `done` - when completing a task
+- `superseded` - when a task is no longer needed
+
 ## Overview
 
 SPARC breaks down complex features into manageable phases:
@@ -54,14 +92,18 @@ track new "Phase 1: Foundation" \
   --next "Begin SPARC: Start with Specification task"
 # Save the returned ID, e.g., phase1_id=abc123
 
-# 3. Create dependent features
+# 3. Create dependent features (no --blocks yet)
 track new "Phase 2: Core Features" \
   --summary "Main functionality from spec" \
-  --next "Blocked until Phase 1 completes" \
-  --blocks $phase1_id
+  --next "Waiting for Phase 1"
 # Save ID: phase2_id=def456
 
-# 4. Create tasks under features
+# 4. Add dependency: Phase 1 blocks Phase 2 (Phase 2 waits for Phase 1)
+track update $phase1_id --blocks $phase2_id \
+  --summary "Initial setup from spec" \
+  --next "Begin SPARC: Start with Specification task"
+
+# 5. Create tasks under features
 track new "Setup database" \
   --parent $phase1_id \
   --summary "Database initialization" \
@@ -109,11 +151,15 @@ track update <spec-task-id> \
 **Purpose**: Design the implementation approach before writing code.
 
 ```bash
+# Create the task
 track new "Pseudocode: <Feature Name>" \
   --parent <feature-id> \
   --summary "Design implementation approach" \
-  --next "Write pseudocode for main flows, data structures, error handling" \
-  --blocks <spec-task-id>
+  --next "Waiting for Spec to complete"
+
+# Add dependency: Spec blocks Pseudocode (Pseudocode waits for Spec)
+track update <spec-task-id> --blocks <pseudo-task-id> \
+  --summary "..." --next "..."
 ```
 
 **Acceptance Criteria**:
@@ -142,11 +188,15 @@ track update <pseudo-task-id> \
 **Purpose**: Define file structure, interfaces, and integration points.
 
 ```bash
+# Create the task
 track new "Architecture: <Feature Name>" \
   --parent <feature-id> \
   --summary "Define file structure and interfaces" \
-  --next "Identify: 1) Files to create/modify 2) Interfaces 3) Integration points" \
-  --blocks <pseudo-task-id>
+  --next "Waiting for Pseudocode to complete"
+
+# Add dependency: Pseudocode blocks Architecture
+track update <pseudo-task-id> --blocks <arch-task-id> \
+  --summary "..." --next "..."
 ```
 
 **Acceptance Criteria**:
@@ -177,11 +227,15 @@ track update <arch-task-id> \
 **Purpose**: Write the actual code and tests.
 
 ```bash
+# Create the task
 track new "Implement: <Feature Name>" \
   --parent <feature-id> \
   --summary "Write code, tests, iterate" \
-  --next "Start implementation following Architecture plan" \
-  --blocks <arch-task-id>
+  --next "Waiting for Architecture to complete"
+
+# Add dependency: Architecture blocks Implementation
+track update <arch-task-id> --blocks <impl-task-id> \
+  --summary "..." --next "..."
 ```
 
 **Acceptance Criteria**:
@@ -217,11 +271,15 @@ track update <impl-task-id> \
 **Purpose**: Final verification that all acceptance criteria are met.
 
 ```bash
+# Create the task
 track new "Complete: <Feature Name>" \
   --parent <feature-id> \
   --summary "Verify all acceptance criteria met" \
-  --next "Run final verification against Spec acceptance criteria" \
-  --blocks <impl-task-id>
+  --next "Waiting for Implementation to complete"
+
+# Add dependency: Implementation blocks Completion
+track update <impl-task-id> --blocks <complete-task-id> \
+  --summary "..." --next "..."
 ```
 
 **Acceptance Criteria**:
@@ -332,11 +390,15 @@ track new "Handle new requirement X" \
   --summary "New requirement from updated spec" \
   --next "Integrate with existing implementation"
 
-# If it blocks other work
+# If it blocks other work (new task must complete before Y)
+# First create the task, then add the dependency
 track new "New prerequisite" \
   --parent <feature-id> \
   --summary "Must complete before Y" \
-  --blocks <dependent-task-id>
+  --next "Start this first"
+# Get the new task ID, then:
+track update <new-prereq-id> --blocks <dependent-task-id> \
+  --summary "Must complete before Y" --next "Start this first"
 ```
 
 ### Updating Existing Tasks
@@ -347,11 +409,13 @@ track update <task-id> \
   --summary "Updated: now includes requirement X" \
   --next "Revisit implementation to add X"
 
-# Add new dependency
-track update <task-id> --blocks <new-blocker-id>
+# Add new dependency: blocker-id blocks task-id (task-id waits for blocker)
+track update <blocker-id> --blocks <task-id> \
+  --summary "..." --next "..."
 
 # Remove obsolete dependency
-track update <task-id> --unblocks <old-blocker-id>
+track update <blocker-id> --unblocks <task-id> \
+  --summary "..." --next "..."
 ```
 
 ### Handling Scope Reduction
