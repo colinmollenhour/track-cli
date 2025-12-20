@@ -61,24 +61,26 @@ const ACTIVE_STATUSES: Status[] = ['planned', 'in_progress', 'blocked'];
 const initialExpandDone = ref(false);
 
 // Quick start copy state
-const quickStartCopied = ref(false);
-const quickStartCommand = 'claude --permission-mode dontAsk "Start the next track/task"';
+const quickStartCopied1 = ref(false);
+const quickStartCopied2 = ref(false);
+const quickStartCommand1 = 'claude --dangerously-skip-permissions "Start the next track/task, commit the result and then continue on to the next until all are done"';
+const quickStartCommand2 = 'claude "Fetch task NCxRSqUW and then switch to plan mode and help me plan it"';
 
-async function copyQuickStartCommand() {
+async function copyToClipboard(text: string, copiedRef: typeof quickStartCopied1) {
   try {
-    await navigator.clipboard.writeText(quickStartCommand);
-    quickStartCopied.value = true;
-    setTimeout(() => (quickStartCopied.value = false), 1500);
+    await navigator.clipboard.writeText(text);
+    copiedRef.value = true;
+    setTimeout(() => (copiedRef.value = false), 1500);
   } catch {
     // Fallback for older browsers
     const textarea = document.createElement('textarea');
-    textarea.value = quickStartCommand;
+    textarea.value = text;
     document.body.appendChild(textarea);
     textarea.select();
     document.execCommand('copy');
     document.body.removeChild(textarea);
-    quickStartCopied.value = true;
-    setTimeout(() => (quickStartCopied.value = false), 1500);
+    copiedRef.value = true;
+    setTimeout(() => (copiedRef.value = false), 1500);
   }
 }
 
@@ -373,18 +375,29 @@ onUnmounted(() => {
       <h2 class="text-lg text-gray-500 font-mono mt-1">{{ projectPath }}</h2>
       <details class="mt-2 text-sm text-gray-600">
         <summary class="cursor-pointer hover:text-gray-800 select-none">Quick Start</summary>
-        <div class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <p class="mb-2">Create tasks with summaries describing what to do, then let Claude work through them:</p>
+        <div class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+          <p class="mb-2">Create tasks with summaries describing what to do, then let the agent work through them:</p>
           <code
-            @click="copyQuickStartCommand"
+            @click="copyToClipboard(quickStartCommand1, quickStartCopied1)"
             :class="[
               'block bg-gray-800 p-2 rounded text-xs font-mono cursor-pointer transition-colors relative',
-              quickStartCopied ? 'text-green-300 bg-gray-700' : 'text-green-400 hover:bg-gray-700'
+              quickStartCopied1 ? 'text-green-300 bg-gray-700' : 'text-green-400 hover:bg-gray-700'
             ]"
-            :title="quickStartCopied ? 'Copied!' : 'Click to copy'"
+            :title="quickStartCopied1 ? 'Copied!' : 'Click to copy'"
           >
-            <span v-if="quickStartCopied" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs">✓ Copied</span>
-            {{ quickStartCommand }}
+            <span v-if="quickStartCopied1" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs">✓ Copied</span>
+            {{ quickStartCommand1 }}
+          </code>
+          <code
+            @click="copyToClipboard(quickStartCommand2, quickStartCopied2)"
+            :class="[
+              'block bg-gray-800 p-2 rounded text-xs font-mono cursor-pointer transition-colors relative',
+              quickStartCopied2 ? 'text-green-300 bg-gray-700' : 'text-green-400 hover:bg-gray-700'
+            ]"
+            :title="quickStartCopied2 ? 'Copied!' : 'Click to copy'"
+          >
+            <span v-if="quickStartCopied2" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs">✓ Copied</span>
+            {{ quickStartCommand2 }}
           </code>
         </div>
       </details>
