@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { fetchStatus, createTrack, updateTrack } from './api';
 import type { TrackWithDetails, CreateTrackParams, UpdateTrackParams, Status } from './api';
 import TrackTree from './components/TrackTree.vue';
@@ -13,6 +13,12 @@ const tracks = ref<TrackWithDetails[]>([]);
 // Root track is the one with parent_id === null (project name from track init)
 const rootTrack = computed(() => tracks.value.find((t) => t.parent_id === null));
 const projectName = computed(() => rootTrack.value?.title ?? 'Track Status');
+
+// Update document title when project name changes
+watch(projectName, (name) => {
+  document.title = name;
+}, { immediate: true });
+
 const loading = ref(true);
 const error = ref<string | null>(null);
 
