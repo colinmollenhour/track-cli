@@ -68,7 +68,11 @@ export function getPortPath(trackDir: string): string {
   return join(trackDir, 'web.port');
 }
 
-export function isServerRunning(trackDir: string): { running: boolean; pid?: number; port?: number } {
+export function isServerRunning(trackDir: string): {
+  running: boolean;
+  pid?: number;
+  port?: number;
+} {
   const pidPath = getPidPath(trackDir);
   const portPath = getPortPath(trackDir);
 
@@ -92,7 +96,9 @@ export function isServerRunning(trackDir: string): { running: boolean; pid?: num
     return { running: false };
   }
 
-  const port = existsSync(portPath) ? parseInt(readFileSync(portPath, 'utf-8').trim(), 10) : undefined;
+  const port = existsSync(portPath)
+    ? parseInt(readFileSync(portPath, 'utf-8').trim(), 10)
+    : undefined;
 
   return { running: true, pid, port };
 }

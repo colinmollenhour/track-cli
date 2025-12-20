@@ -122,7 +122,7 @@ export const commandMetadata: CommandMetadata[] = [
       },
       {
         name: 'status',
-        description: 'Track status (planned|in_progress|done|blocked|superseded)',
+        description: 'Track status (planned|in_progress|done|blocked|superseded|on_hold)',
         type: 'string',
         required: false,
         defaultValue: 'in_progress',

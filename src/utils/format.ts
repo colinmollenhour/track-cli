@@ -7,6 +7,7 @@ export const STATUS_ICONS: Record<Status, string> = {
   done: '✓',
   blocked: '⚠',
   superseded: '✗',
+  on_hold: '⏸',
 };
 
 export function colorStatus(status: Status): string {
@@ -23,6 +24,8 @@ export function colorStatus(status: Status): string {
       return pc.cyan(`${icon} ${status}`);
     case 'superseded':
       return pc.dim(`${icon} ${status}`);
+    case 'on_hold':
+      return pc.magenta(`${icon} ${status}`);
   }
   return `${icon} ${rawStatus}`;
 }

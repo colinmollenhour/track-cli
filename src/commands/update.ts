@@ -52,9 +52,20 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
         })()
     : 'in_progress';
 
-  // 3b. Validate: cannot set non-final status if any ancestor is in a final state
+  // 3b. Validate: cannot change from on_hold to in_progress via CLI
+  // (Use the web UI to do this, as it allows more flexibility)
+  if (status === 'in_progress') {
+    const currentTrack = lib.getTrack(dbPath, trackId);
+    if (currentTrack && currentTrack.status === 'on_hold') {
+      console.error(`Error: Cannot change status from 'on_hold' to 'in_progress' via CLI.`);
+      console.error('Use the web UI to change status from on_hold to in_progress.');
+      process.exit(1);
+    }
+  }
+
+  // 3c. Validate: cannot set non-final status if any ancestor is in a final state
   const FINAL_STATUSES: Status[] = ['done', 'superseded'];
-  const NON_FINAL_STATUSES: Status[] = ['planned', 'in_progress', 'blocked'];
+  const NON_FINAL_STATUSES: Status[] = ['planned', 'in_progress', 'blocked', 'on_hold'];
 
   if (NON_FINAL_STATUSES.includes(status)) {
     // Check all ancestors for final status
@@ -65,9 +76,7 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
       const parent = lib.getTrack(dbPath, parentId);
       if (parent && FINAL_STATUSES.includes(parent.status)) {
         console.error(`Error: Cannot set status to '${status}'.`);
-        console.error(
-          `Parent track '${parent.title}' (${parent.id}) is '${parent.status}'.`
-        );
+        console.error(`Parent track '${parent.title}' (${parent.id}) is '${parent.status}'.`);
         console.error('A sub-task cannot be active when its parent is done or superseded.');
         process.exit(1);
       }
@@ -197,9 +206,9 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
       }
 
       // 10b. Auto-supersede active descendant tasks
-      // When a parent is marked done, any planned/in_progress/blocked children become superseded
+      // When a parent is marked done, any planned/in_progress/blocked/on_hold children become superseded
       const allTracks = lib.getAllTracks(dbPath);
-      const activeStatuses = ['planned', 'in_progress', 'blocked'];
+      const activeStatuses = ['planned', 'in_progress', 'blocked', 'on_hold'];
 
       // Collect all descendant IDs
       const descendantIds = new Set<string>();

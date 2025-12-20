@@ -1,7 +1,7 @@
 /**
  * Track status lifecycle states.
  */
-export type Status = 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded';
+export type Status = 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded' | 'on_hold';
 
 /**
  * Derived track kind (not stored in database).
@@ -73,13 +73,19 @@ export const VALID_STATUSES: readonly Status[] = [
   'done',
   'blocked',
   'superseded',
+  'on_hold',
 ] as const;
 
 /**
  * Active status values (shown by default in status command).
  * These are tracks that are not yet completed or abandoned.
  */
-export const ACTIVE_STATUSES: readonly Status[] = ['planned', 'in_progress', 'blocked'] as const;
+export const ACTIVE_STATUSES: readonly Status[] = [
+  'planned',
+  'in_progress',
+  'blocked',
+  'on_hold',
+] as const;
 
 /**
  * Check if a string is a valid status.

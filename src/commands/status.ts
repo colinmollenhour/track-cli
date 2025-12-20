@@ -177,6 +177,8 @@ function getStatusEmoji(status: string): string {
       return '🚫';
     case 'superseded':
       return '⏭️';
+    case 'on_hold':
+      return '⏸️';
     default:
       return '❓';
   }

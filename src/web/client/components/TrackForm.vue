@@ -195,6 +195,7 @@ function handleSubmit() {
             <option value="done">Done</option>
             <option value="blocked">Blocked</option>
             <option value="superseded">Superseded</option>
+            <option value="on_hold">On Hold</option>
           </select>
         </div>
 

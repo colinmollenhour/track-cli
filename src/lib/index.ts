@@ -87,7 +87,7 @@ export class TrackManager {
     parent_id?: string | null;
     summary: string;
     next_prompt: string;
-    status?: 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded';
+    status?: 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded' | 'on_hold';
     worktree?: string | null;
     files?: string[];
   }): db.Track {
@@ -128,7 +128,7 @@ export class TrackManager {
     params: {
       summary: string;
       next_prompt: string;
-      status: 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded';
+      status: 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded' | 'on_hold';
       worktree?: string | null;
       files?: string[];
     }

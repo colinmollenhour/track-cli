@@ -1,4 +1,4 @@
-export type Status = 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded';
+export type Status = 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded' | 'on_hold';
 export type Kind = 'super' | 'feature' | 'task';
 
 export interface Track {

@@ -12,6 +12,7 @@ const statusConfig: Record<Status, { bg: string; text: string; label: string }> 
   done: { bg: 'bg-green-200', text: 'text-green-800', label: 'Done' },
   blocked: { bg: 'bg-yellow-200', text: 'text-yellow-800', label: 'Blocked' },
   superseded: { bg: 'bg-red-200', text: 'text-red-800', label: 'Superseded' },
+  on_hold: { bg: 'bg-orange-200', text: 'text-orange-800', label: 'On Hold' },
 };
 
 const config = computed(() => statusConfig[props.status] || statusConfig.planned);
