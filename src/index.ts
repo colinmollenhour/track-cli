@@ -109,6 +109,11 @@ commandMetadata.forEach((meta) => {
         showCommand(trackId, options);
       });
       break;
+    case 'delete':
+      cmd.action((trackId: string, options: { force?: boolean }) => {
+        deleteCommand(trackId, options);
+      });
+      break;
     case 'mcp':
       cmd.action((action: string, options: { port?: number; host?: string }) => {
         if (action === 'start') {
@@ -123,11 +128,6 @@ commandMetadata.forEach((meta) => {
     case 'web':
       cmd.action((action: string | undefined, options: { port?: number; host?: string }) => {
         webCommand(action, options);
-      });
-      break;
-    case 'delete':
-      cmd.action((trackId: string, options: { force?: boolean }) => {
-        deleteCommand(trackId, options);
       });
       break;
     case 'sort':

@@ -648,6 +648,37 @@ export function getAllDependencies(
   });
 }
 
+// ============================================================================
+// Delete Functions
+// ============================================================================
+
+/**
+ * Get all descendant track IDs (children, grandchildren, etc.) of a given track.
+ * Uses BFS to traverse the hierarchy.
+ *
+ * @param dbPath - Path to the database file
+ * @param trackId - The root track ID to get descendants for
+ * @returns Array of descendant track IDs (does not include the input trackId)
+ */
+export function getDescendantIds(dbPath: string, trackId: string): string[] {
+  return withDatabase(dbPath, (db) => {
+    const descendants: string[] = [];
+    const queue: string[] = [trackId];
+    const getChildrenStmt = db.prepare('SELECT id FROM tracks WHERE parent_id = ?');
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const children = getChildrenStmt.all(current) as Array<{ id: string }>;
+      for (const child of children) {
+        descendants.push(child.id);
+        queue.push(child.id);
+      }
+    }
+
+    return descendants;
+  });
+}
+
 /**
  * Delete a track and all its associated data.
  * This includes files, dependencies, and child tracks (recursively).
@@ -672,8 +703,10 @@ export function deleteTrack(dbPath: string, trackId: string): number {
     collectDescendants(trackId);
 
     // Use a transaction for atomicity
+    // Delete in reverse order (children first) to satisfy foreign key constraints
     const deleteAll = db.transaction(() => {
-      for (const id of idsToDelete) {
+      const reverseIds = [...idsToDelete].reverse();
+      for (const id of reverseIds) {
         // Delete file associations
         db.prepare('DELETE FROM track_files WHERE track_id = ?').run(id);
 
@@ -706,6 +739,10 @@ export function getChildTrackIds(dbPath: string, trackId: string): string[] {
     return rows.map((row) => row.id);
   });
 }
+
+// ============================================================================
+// Sort/Move Functions
+// ============================================================================
 
 /**
  * Move a track before or after another track (same parent level).

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { TrackManager } from '../../lib/index.js';
 import type { Status } from '../../lib/types.js';
+import type { GitHost } from './index.js';
 
 interface CreateTrackBody {
   title: string;
@@ -34,13 +35,21 @@ interface MoveTrackBody {
   position: 'before' | 'after';
 }
 
-export function apiRoutes(manager: TrackManager): Hono {
+export function apiRoutes(
+  manager: TrackManager,
+  projectPath: string,
+  gitHost: GitHost | null
+): Hono {
   const api = new Hono();
 
   // GET /api/web/status - Get all tracks (tree structure)
   api.get('/status', (c) => {
     const status = manager.getStatus();
-    return c.json(status);
+    return c.json({
+      ...status,
+      projectPath,
+      gitHost,
+    });
   });
 
   // GET /api/web/tracks/:id - Get single track
@@ -183,6 +192,15 @@ export function apiRoutes(manager: TrackManager): Hono {
     } catch (error) {
       return c.json({ error: (error as Error).message }, 400);
     }
+  });
+
+  // POST /api/web/stop - Stop the web server
+  api.post('/stop', (c) => {
+    // Schedule shutdown after response is sent
+    setTimeout(() => {
+      process.exit(0);
+    }, 100);
+    return c.json({ success: true, message: 'Server stopping...' });
   });
 
   return api;
