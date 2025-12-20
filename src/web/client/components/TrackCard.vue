@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import type { TrackWithDetails } from '../api';
@@ -26,6 +27,31 @@ function getTrackTitle(id: string): string {
   const track = props.allTracks.find((t) => t.id === id);
   return track?.title || id;
 }
+
+// Click-to-copy functionality
+const copiedId = ref(false);
+const copiedTitle = ref(false);
+
+async function copyToClipboard(text: string, type: 'id' | 'title') {
+  try {
+    await navigator.clipboard.writeText(text);
+    if (type === 'id') {
+      copiedId.value = true;
+      setTimeout(() => (copiedId.value = false), 1500);
+    } else {
+      copiedTitle.value = true;
+      setTimeout(() => (copiedTitle.value = false), 1500);
+    }
+  } catch {
+    // Fallback for older browsers
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  }
+}
 </script>
 
 <template>
@@ -34,7 +60,16 @@ function getTrackTitle(id: string): string {
       <div class="flex-1 min-w-0">
         <!-- Header row -->
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-xs text-gray-400 font-mono">{{ track.id }}</span>
+          <span
+            @click="copyToClipboard(track.id, 'id')"
+            :class="[
+              'text-xs font-mono cursor-pointer hover:text-blue-600 transition-colors',
+              copiedId ? 'text-green-600' : 'text-gray-400'
+            ]"
+            :title="copiedId ? 'Copied!' : 'Click to copy ID'"
+          >
+            {{ copiedId ? '✓ ' : '' }}{{ track.id }}
+          </span>
           <StatusBadge :status="track.status" />
           <span class="text-xs text-gray-400">[{{ track.kind }}]</span>
           <span v-if="track.worktree" class="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
@@ -43,8 +78,16 @@ function getTrackTitle(id: string): string {
         </div>
 
         <!-- Title -->
-        <h3 :class="['font-semibold mt-1', indent === 0 ? 'text-lg' : 'text-base']">
-          {{ track.title }}
+        <h3
+          @click="copyToClipboard(track.title, 'title')"
+          :class="[
+            'font-semibold mt-1 cursor-pointer hover:text-blue-600 transition-colors',
+            indent === 0 ? 'text-lg' : 'text-base',
+            copiedTitle ? 'text-green-600' : ''
+          ]"
+          :title="copiedTitle ? 'Copied!' : 'Click to copy title'"
+        >
+          {{ copiedTitle ? '✓ ' : '' }}{{ track.title }}
         </h3>
 
         <!-- Summary -->
