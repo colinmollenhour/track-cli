@@ -24,6 +24,7 @@ const allStatuses: { value: Status; label: string }[] = [
   { value: 'in_progress', label: 'In Progress' },
   { value: 'done', label: 'Done' },
   { value: 'blocked', label: 'Blocked' },
+  { value: 'on_hold', label: 'On Hold' },
   { value: 'superseded', label: 'Superseded' },
 ];
 
