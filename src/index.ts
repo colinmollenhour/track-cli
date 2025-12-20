@@ -6,6 +6,7 @@ import { newCommand } from './commands/new.js';
 import { updateCommand } from './commands/update.js';
 import { statusCommand } from './commands/status.js';
 import { showCommand } from './commands/show.js';
+import { deleteCommand } from './commands/delete.js';
 import { mcpStartCommand } from './commands/mcp.js';
 import { webCommand } from './commands/web.js';
 import { commandMetadata, CommandFlag } from './commands/metadata.js';
@@ -120,6 +121,11 @@ commandMetadata.forEach((meta) => {
     case 'web':
       cmd.action((action: string | undefined, options: { port?: number; host?: string }) => {
         webCommand(action, options);
+      });
+      break;
+    case 'delete':
+      cmd.action((trackId: string, options: { force?: boolean }) => {
+        deleteCommand(trackId, options);
       });
       break;
     default:

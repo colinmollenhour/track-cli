@@ -284,4 +284,22 @@ export const commandMetadata: CommandMetadata[] = [
     usage: 'track web [start|stop] [-p|--port <port>] [-h|--host <host>]',
     example: 'track web start --port 3000',
   },
+  {
+    name: 'delete',
+    summary: 'Delete a track and all its children',
+    flags: [
+      {
+        name: 'force',
+        alias: 'f',
+        description: 'Skip confirmation prompt',
+        type: 'boolean',
+        required: false,
+        defaultValue: false,
+        cliFlag: '-f, --force',
+      },
+    ],
+    args: [{ name: 'track-id', required: true, description: 'Track ID to delete' }],
+    usage: 'track delete <track-id> [-f|--force]',
+    example: 'track delete ABC123 --force',
+  },
 ];

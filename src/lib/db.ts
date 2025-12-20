@@ -606,3 +606,62 @@ export function getAllDependencies(
     return dependencyMap;
   });
 }
+
+/**
+ * Delete a track and all its associated data.
+ * This includes files, dependencies, and child tracks (recursively).
+ *
+ * @param dbPath - Path to the database file
+ * @param trackId - The track ID to delete
+ * @returns The number of tracks deleted (including children)
+ */
+export function deleteTrack(dbPath: string, trackId: string): number {
+  return withDatabase(dbPath, (db) => {
+    // Collect all track IDs to delete (the track and its descendants)
+    const idsToDelete: string[] = [];
+    const collectDescendants = (id: string) => {
+      idsToDelete.push(id);
+      const children = db.prepare('SELECT id FROM tracks WHERE parent_id = ?').all(id) as Array<{
+        id: string;
+      }>;
+      for (const child of children) {
+        collectDescendants(child.id);
+      }
+    };
+    collectDescendants(trackId);
+
+    // Use a transaction for atomicity
+    const deleteAll = db.transaction(() => {
+      for (const id of idsToDelete) {
+        // Delete file associations
+        db.prepare('DELETE FROM track_files WHERE track_id = ?').run(id);
+
+        // Delete dependencies where this track is blocking or blocked
+        db.prepare('DELETE FROM track_dependencies WHERE blocking_track_id = ?').run(id);
+        db.prepare('DELETE FROM track_dependencies WHERE blocked_track_id = ?').run(id);
+
+        // Delete the track itself
+        db.prepare('DELETE FROM tracks WHERE id = ?').run(id);
+      }
+    });
+
+    deleteAll();
+
+    return idsToDelete.length;
+  });
+}
+
+/**
+ * Get all child track IDs of a given track (direct children only).
+ *
+ * @param dbPath - Path to the database file
+ * @param trackId - The parent track ID
+ * @returns Array of child track IDs
+ */
+export function getChildTrackIds(dbPath: string, trackId: string): string[] {
+  return withDatabase(dbPath, (db) => {
+    const stmt = db.prepare('SELECT id FROM tracks WHERE parent_id = ?');
+    const rows = stmt.all(trackId) as Array<{ id: string }>;
+    return rows.map((row) => row.id);
+  });
+}

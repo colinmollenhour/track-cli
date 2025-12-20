@@ -294,6 +294,27 @@ export class TrackManager {
   hasBlockers(trackId: string): boolean {
     return db.hasBlockers(this.dbPath, trackId);
   }
+
+  /**
+   * Delete a track and all its associated data.
+   * This includes files, dependencies, and child tracks (recursively).
+   *
+   * @param trackId - The track ID to delete
+   * @returns The number of tracks deleted (including children)
+   */
+  deleteTrack(trackId: string): number {
+    return db.deleteTrack(this.dbPath, trackId);
+  }
+
+  /**
+   * Get all child track IDs of a given track (direct children only).
+   *
+   * @param trackId - The parent track ID
+   * @returns Array of child track IDs
+   */
+  getChildTrackIds(trackId: string): string[] {
+    return db.getChildTrackIds(this.dbPath, trackId);
+  }
 }
 
 // Re-export database functions for advanced use cases
@@ -301,6 +322,7 @@ export {
   initializeDatabase,
   createTrack,
   updateTrack,
+  deleteTrack,
   getAllTracks,
   getAllTrackFiles,
   getAllDependencies,
@@ -311,4 +333,5 @@ export {
   getBlockedBy,
   areAllBlockersDone,
   hasBlockers,
+  getChildTrackIds,
 } from './db.js';
