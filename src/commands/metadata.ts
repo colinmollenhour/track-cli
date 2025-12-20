@@ -229,6 +229,14 @@ export const commandMetadata: CommandMetadata[] = [
     example: 'track show ABC123 --json',
   },
   {
+    name: 'delete',
+    summary: 'Delete a track and all its descendants',
+    flags: [],
+    args: [{ name: 'track-id', required: true, description: 'Track ID to delete' }],
+    usage: 'track delete <track-id>',
+    example: 'track delete ABC12345',
+  },
+  {
     name: 'mcp',
     summary: 'Start the MCP server for AI agent integration',
     flags: [

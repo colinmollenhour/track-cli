@@ -606,3 +606,84 @@ export function getAllDependencies(
     return dependencyMap;
   });
 }
+
+// ============================================================================
+// Delete Functions
+// ============================================================================
+
+/**
+ * Get all descendant track IDs (children, grandchildren, etc.) of a given track.
+ * Uses BFS to traverse the hierarchy.
+ *
+ * @param dbPath - Path to the database file
+ * @param trackId - The root track ID to get descendants for
+ * @returns Array of descendant track IDs (does not include the input trackId)
+ */
+export function getDescendantIds(dbPath: string, trackId: string): string[] {
+  return withDatabase(dbPath, (db) => {
+    const descendants: string[] = [];
+    const queue: string[] = [trackId];
+    const getChildrenStmt = db.prepare('SELECT id FROM tracks WHERE parent_id = ?');
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const children = getChildrenStmt.all(current) as Array<{ id: string }>;
+      for (const child of children) {
+        descendants.push(child.id);
+        queue.push(child.id);
+      }
+    }
+
+    return descendants;
+  });
+}
+
+/**
+ * Delete a track and all its descendants (cascade delete).
+ * Also removes associated files and dependencies.
+ *
+ * @param dbPath - Path to the database file
+ * @param trackId - Track ID to delete
+ */
+export function deleteTrack(dbPath: string, trackId: string): void {
+  withDatabase(dbPath, (db) => {
+    // Get all IDs to delete (track + descendants)
+    const descendants: string[] = [];
+    const queue: string[] = [trackId];
+    const getChildrenStmt = db.prepare('SELECT id FROM tracks WHERE parent_id = ?');
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const children = getChildrenStmt.all(current) as Array<{ id: string }>;
+      for (const child of children) {
+        descendants.push(child.id);
+        queue.push(child.id);
+      }
+    }
+
+    const allIds = [trackId, ...descendants];
+
+    // Use a transaction for atomicity
+    const deleteAll = db.transaction((ids: string[]) => {
+      const deleteDepsBlocking = db.prepare(
+        'DELETE FROM track_dependencies WHERE blocking_track_id = ?'
+      );
+      const deleteDepsBlocked = db.prepare(
+        'DELETE FROM track_dependencies WHERE blocked_track_id = ?'
+      );
+      const deleteFiles = db.prepare('DELETE FROM track_files WHERE track_id = ?');
+      const deleteTrackStmt = db.prepare('DELETE FROM tracks WHERE id = ?');
+
+      // Delete in reverse order (deepest descendants first) to satisfy foreign keys
+      const reverseIds = [...ids].reverse();
+      for (const id of reverseIds) {
+        deleteDepsBlocking.run(id);
+        deleteDepsBlocked.run(id);
+        deleteFiles.run(id);
+        deleteTrackStmt.run(id);
+      }
+    });
+
+    deleteAll(allIds);
+  });
+}
