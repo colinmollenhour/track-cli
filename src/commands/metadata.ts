@@ -108,16 +108,16 @@ export const commandMetadata: CommandMetadata[] = [
     flags: [
       {
         name: 'summary',
-        description: 'Updated state description',
+        description: 'Updated state description (uses current if omitted)',
         type: 'string',
-        required: true,
+        required: false,
         cliFlag: '--summary <summary>',
       },
       {
         name: 'next',
-        description: 'What to do next',
+        description: 'What to do next (uses current if omitted)',
         type: 'string',
-        required: true,
+        required: false,
         cliFlag: '--next <next-prompt>',
       },
       {

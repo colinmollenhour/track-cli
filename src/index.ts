@@ -73,9 +73,9 @@ commandMetadata.forEach((meta) => {
         (
           trackId: string,
           options: {
-            summary: string;
-            next: string;
-            status: string;
+            summary?: string;
+            next?: string;
+            status?: string;
             file?: string[];
             worktree?: string;
             blocks?: string[];

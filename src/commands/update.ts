@@ -8,8 +8,8 @@ import type { UpdateTrackParams, Status } from '../models/types.js';
  * Options for the update command.
  */
 export interface UpdateCommandOptions {
-  summary: string;
-  next: string;
+  summary?: string;
+  next?: string;
   status?: string;
   file?: string[];
   worktree?: string;
@@ -91,11 +91,11 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
   }
 
   try {
-    // 4. Build UpdateTrackParams
+    // 4. Build UpdateTrackParams (use current values if not provided)
     const now = getCurrentTimestamp();
     const updateParams: UpdateTrackParams = {
-      summary: options.summary,
-      next_prompt: options.next,
+      summary: options.summary ?? currentTrack?.summary ?? '',
+      next_prompt: options.next ?? currentTrack?.next_prompt ?? '',
       status,
       updated_at: now,
     };
