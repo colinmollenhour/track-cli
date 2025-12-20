@@ -97,8 +97,8 @@ function handleSubmit() {
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
     <div
       :class="[
-        'bg-white rounded-lg shadow-xl p-6 transition-all duration-200',
-        isExpanded ? 'w-[90%] max-w-none' : 'max-w-lg w-full'
+        'bg-white rounded-lg shadow-xl p-6 transition-all duration-200 flex flex-col',
+        isExpanded ? 'w-[90%] max-w-none h-[85vh]' : 'max-w-lg w-full'
       ]"
     >
       <div class="flex items-center justify-between mb-4">
@@ -134,7 +134,7 @@ function handleSubmit() {
         </button>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="space-y-4">
+      <form @submit.prevent="handleSubmit" :class="['space-y-4', isExpanded ? 'flex-1 overflow-y-auto flex flex-col' : '']">
         <!-- Title (only for new tracks) -->
         <div v-if="!isEditing">
           <label class="block text-sm font-medium text-gray-700">Title *</label>
@@ -162,24 +162,30 @@ function handleSubmit() {
         </div>
 
         <!-- Summary -->
-        <div>
+        <div :class="isExpanded ? 'flex-1 flex flex-col min-h-0' : ''">
           <label class="block text-sm font-medium text-gray-700">Summary</label>
           <textarea
             v-model="summary"
-            rows="3"
+            :rows="isExpanded ? undefined : 3"
             placeholder="Current state description"
-            class="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+            :class="[
+              'mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border',
+              isExpanded ? 'flex-1 resize-none' : ''
+            ]"
           ></textarea>
         </div>
 
         <!-- Next prompt -->
-        <div>
+        <div :class="isExpanded ? 'flex-1 flex flex-col min-h-0' : ''">
           <label class="block text-sm font-medium text-gray-700">Next</label>
           <textarea
             v-model="nextPrompt"
-            rows="2"
+            :rows="isExpanded ? undefined : 2"
             placeholder="What to do next"
-            class="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+            :class="[
+              'mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border',
+              isExpanded ? 'flex-1 resize-none' : ''
+            ]"
           ></textarea>
         </div>
 
