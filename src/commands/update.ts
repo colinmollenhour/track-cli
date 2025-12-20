@@ -77,12 +77,18 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
 
   try {
     // 4. Build UpdateTrackParams
+    const now = getCurrentTimestamp();
     const updateParams: UpdateTrackParams = {
       summary: options.summary,
       next_prompt: options.next,
       status,
-      updated_at: getCurrentTimestamp(),
+      updated_at: now,
     };
+
+    // 4b. Set completed_at when marking as done or superseded
+    if (status === 'done' || status === 'superseded') {
+      updateParams.completed_at = now;
+    }
 
     // 5. Handle worktree if provided
     // '-' means unset (set to null), otherwise set to the provided value
@@ -214,7 +220,8 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
             summary: descTrack.summary,
             next_prompt: 'Parent marked done - task superseded',
             status: 'superseded',
-            updated_at: getCurrentTimestamp(),
+            updated_at: now,
+            completed_at: now,
           });
           supersededTracks.push(descId);
         }

@@ -1,5 +1,6 @@
 import { projectExists, getDatabasePath, getCurrentWorktree } from '../utils/paths.js';
 import * as lib from '../lib/db.js';
+import { migrateDatabase } from '../lib/db.js';
 import { buildTrackTree } from '../models/tree.js';
 import { ACTIVE_STATUSES } from '../models/types.js';
 import type { TrackWithDetails } from '../models/types.js';
@@ -31,6 +32,9 @@ export function statusCommand(trackId: string | undefined, options: StatusComman
 
   try {
     const dbPath = getDatabasePath();
+
+    // Run migrations if needed
+    migrateDatabase(dbPath);
 
     // 2. If a specific track ID is provided, show that track and its descendants
     if (trackId) {

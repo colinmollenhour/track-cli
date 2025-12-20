@@ -1,6 +1,15 @@
 <script setup lang="ts">
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import type { TrackWithDetails } from '../api';
 import StatusBadge from './StatusBadge.vue';
+
+dayjs.extend(relativeTime);
+
+function formatRelativeTime(timestamp: string | null): string {
+  if (!timestamp) return '';
+  return dayjs(timestamp).fromNow();
+}
 
 const props = defineProps<{
   track: TrackWithDetails;
@@ -69,6 +78,15 @@ function getTrackTitle(id: string): string {
         <div v-if="track.blocked_by.length > 0" class="mt-1">
           <span class="text-xs text-yellow-600">
             Blocked by: {{ track.blocked_by.map(getTrackTitle).join(', ') }}
+          </span>
+        </div>
+
+        <!-- Timestamps -->
+        <div class="mt-2 flex flex-wrap gap-3 text-xs text-gray-400">
+          <span :title="track.created_at">Created {{ formatRelativeTime(track.created_at) }}</span>
+          <span :title="track.updated_at">Updated {{ formatRelativeTime(track.updated_at) }}</span>
+          <span v-if="track.completed_at" :title="track.completed_at" class="text-green-600">
+            Completed {{ formatRelativeTime(track.completed_at) }}
           </span>
         </div>
       </div>

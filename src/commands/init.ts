@@ -52,6 +52,7 @@ export function initCommand(name?: string, force?: boolean): void {
       worktree: null, // Root track has no worktree by default
       created_at: now,
       updated_at: now,
+      completed_at: null,
     };
 
     lib.createTrack(dbPath, rootTrack);

@@ -26,6 +26,7 @@ CREATE TABLE tracks (
   worktree TEXT DEFAULT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
+  completed_at TEXT DEFAULT NULL,
   FOREIGN KEY (parent_id) REFERENCES tracks(id)
 );
 `;
@@ -172,6 +173,12 @@ export function migrateDatabase(dbPath: string): void {
       }
     }
 
+    // Migrate completed_at column
+    const hasCompletedAt = columns.some((col) => col.name === 'completed_at');
+    if (!hasCompletedAt) {
+      db.exec('ALTER TABLE tracks ADD COLUMN completed_at TEXT DEFAULT NULL');
+    }
+
     // Migrate track_dependencies table
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as Array<{
       name: string;
@@ -198,9 +205,9 @@ export function createTrack(dbPath: string, params: CreateTrackParams): Track {
   return withDatabase(dbPath, (db) => {
     const stmt = db.prepare(`
       INSERT INTO tracks (
-        id, title, parent_id, summary, next_prompt, status, worktree, created_at, updated_at
+        id, title, parent_id, summary, next_prompt, status, worktree, created_at, updated_at, completed_at
       ) VALUES (
-        @id, @title, @parent_id, @summary, @next_prompt, @status, @worktree, @created_at, @updated_at
+        @id, @title, @parent_id, @summary, @next_prompt, @status, @worktree, @created_at, @updated_at, @completed_at
       )
     `);
 
@@ -259,6 +266,11 @@ export function updateTrack(dbPath: string, trackId: string, params: UpdateTrack
     // Only include worktree in update if explicitly provided
     if ('worktree' in params) {
       setClauses.push('worktree = @worktree');
+    }
+
+    // Only include completed_at in update if explicitly provided
+    if ('completed_at' in params) {
+      setClauses.push('completed_at = @completed_at');
     }
 
     const stmt = db.prepare(`

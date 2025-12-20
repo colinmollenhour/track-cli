@@ -21,6 +21,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
+          completed_at: null,
         },
       ];
 
@@ -44,6 +45,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
+          completed_at: null,
         },
         {
           id: 'task456',
@@ -55,6 +57,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:01:00.000Z',
           updated_at: '2025-01-01T00:01:00.000Z',
+          completed_at: null,
         },
       ];
 
@@ -84,6 +87,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
+          completed_at: null,
         },
         {
           id: 'feature1',
@@ -95,6 +99,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:01:00.000Z',
           updated_at: '2025-01-01T00:01:00.000Z',
+          completed_at: null,
         },
         {
           id: 'task1',
@@ -106,6 +111,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:02:00.000Z',
           updated_at: '2025-01-01T00:02:00.000Z',
+          completed_at: null,
         },
       ];
 
@@ -129,6 +135,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
+          completed_at: null,
         },
         {
           id: 'feature1',
@@ -140,6 +147,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:01:00.000Z',
           updated_at: '2025-01-01T00:01:00.000Z',
+          completed_at: null,
         },
         {
           id: 'feature2',
@@ -151,6 +159,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:02:00.000Z',
           updated_at: '2025-01-01T00:02:00.000Z',
+          completed_at: null,
         },
         {
           id: 'task1',
@@ -162,6 +171,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:03:00.000Z',
           updated_at: '2025-01-01T00:03:00.000Z',
+          completed_at: null,
         },
         {
           id: 'task2',
@@ -173,6 +183,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:04:00.000Z',
           updated_at: '2025-01-01T00:04:00.000Z',
+          completed_at: null,
         },
         {
           id: 'task3',
@@ -184,6 +195,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:05:00.000Z',
           updated_at: '2025-01-01T00:05:00.000Z',
+          completed_at: null,
         },
       ];
 
@@ -227,6 +239,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
+          completed_at: null,
         },
       ];
 
@@ -250,6 +263,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
+          completed_at: null,
         },
       ];
 
@@ -270,6 +284,7 @@ describe('tree building', () => {
           worktree: 'feature-branch',
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-02T00:00:00.000Z',
+          completed_at: null,
         },
       ];
 
@@ -285,6 +300,7 @@ describe('tree building', () => {
         worktree: 'feature-branch',
         created_at: '2025-01-01T00:00:00.000Z',
         updated_at: '2025-01-02T00:00:00.000Z',
+          completed_at: null,
       });
     });
 
@@ -300,6 +316,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
+          completed_at: null,
         },
         {
           id: 'blocked',
@@ -311,6 +328,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
+          completed_at: null,
         },
       ];
 
@@ -342,6 +360,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
+          completed_at: null,
         },
       ];
 
@@ -363,6 +382,7 @@ describe('tree building', () => {
           worktree: null,
           created_at: '2025-01-01T00:00:00.000Z',
           updated_at: '2025-01-01T00:00:00.000Z',
+          completed_at: null,
         },
       ];
 

@@ -92,16 +92,18 @@ export class TrackManager {
     files?: string[];
   }): db.Track {
     const now = getCurrentTimestamp();
+    const status = params.status ?? 'planned';
     const trackParams: db.CreateTrackParams = {
       id: generateId(),
       title: params.title,
       parent_id: params.parent_id ?? null,
       summary: params.summary,
       next_prompt: params.next_prompt,
-      status: params.status ?? 'planned',
+      status,
       worktree: params.worktree ?? null,
       created_at: now,
       updated_at: now,
+      completed_at: status === 'done' || status === 'superseded' ? now : null,
     };
 
     const track = db.createTrack(this.dbPath, trackParams);
@@ -131,16 +133,22 @@ export class TrackManager {
       files?: string[];
     }
   ): void {
+    const now = getCurrentTimestamp();
     const updateParams: db.UpdateTrackParams = {
       summary: params.summary,
       next_prompt: params.next_prompt,
       status: params.status,
-      updated_at: getCurrentTimestamp(),
+      updated_at: now,
     };
 
     // Only include worktree if explicitly provided
     if ('worktree' in params) {
       updateParams.worktree = params.worktree;
+    }
+
+    // Set completed_at when marking as done or superseded
+    if (params.status === 'done' || params.status === 'superseded') {
+      updateParams.completed_at = now;
     }
 
     db.updateTrack(this.dbPath, trackId, updateParams);

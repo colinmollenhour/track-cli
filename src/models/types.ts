@@ -22,6 +22,7 @@ export interface Track {
   worktree: string | null;
   created_at: string;
   updated_at: string;
+  completed_at: string | null;
 }
 
 /**
@@ -48,6 +49,7 @@ export interface CreateTrackParams {
   worktree: string | null;
   created_at: string;
   updated_at: string;
+  completed_at: string | null;
 }
 
 /**
@@ -59,6 +61,7 @@ export interface UpdateTrackParams {
   status: Status;
   worktree?: string | null;
   updated_at: string;
+  completed_at?: string | null;
 }
 
 /**

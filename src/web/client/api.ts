@@ -11,6 +11,7 @@ export interface Track {
   worktree: string | null;
   created_at: string;
   updated_at: string;
+  completed_at: string | null;
 }
 
 export interface TrackWithDetails extends Track {

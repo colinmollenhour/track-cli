@@ -91,6 +91,7 @@ export function newCommand(title: string, options: NewCommandOptions): void {
       worktree,
       created_at: now,
       updated_at: now,
+      completed_at: null,
     };
 
     // 8. Create track in database
