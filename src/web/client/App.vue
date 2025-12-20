@@ -47,6 +47,28 @@ const ACTIVE_STATUSES: Status[] = ['planned', 'in_progress', 'blocked'];
 // Track whether initial auto-expand has been done
 const initialExpandDone = ref(false);
 
+// Quick start copy state
+const quickStartCopied = ref(false);
+const quickStartCommand = 'claude --permission-mode dontAsk "Start the next track/task"';
+
+async function copyQuickStartCommand() {
+  try {
+    await navigator.clipboard.writeText(quickStartCommand);
+    quickStartCopied.value = true;
+    setTimeout(() => (quickStartCopied.value = false), 1500);
+  } catch {
+    // Fallback for older browsers
+    const textarea = document.createElement('textarea');
+    textarea.value = quickStartCommand;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    quickStartCopied.value = true;
+    setTimeout(() => (quickStartCopied.value = false), 1500);
+  }
+}
+
 async function loadTracks() {
   try {
     loading.value = true;
@@ -221,7 +243,17 @@ onUnmounted(() => {
         <summary class="cursor-pointer hover:text-gray-800 select-none">Quick Start</summary>
         <div class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
           <p class="mb-2">Create tasks with summaries describing what to do, then let Claude work through them:</p>
-          <code class="block bg-gray-800 text-green-400 p-2 rounded text-xs font-mono">claude --permission-mode dontAsk "Start the next track/task"</code>
+          <code
+            @click="copyQuickStartCommand"
+            :class="[
+              'block bg-gray-800 p-2 rounded text-xs font-mono cursor-pointer transition-colors relative',
+              quickStartCopied ? 'text-green-300 bg-gray-700' : 'text-green-400 hover:bg-gray-700'
+            ]"
+            :title="quickStartCopied ? 'Copied!' : 'Click to copy'"
+          >
+            <span v-if="quickStartCopied" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs">✓ Copied</span>
+            {{ quickStartCommand }}
+          </code>
         </div>
       </details>
     </header>
