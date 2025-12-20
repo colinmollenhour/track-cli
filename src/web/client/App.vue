@@ -234,8 +234,9 @@ onUnmounted(() => {
       <details class="mt-2 text-sm text-gray-600">
         <summary class="cursor-pointer hover:text-gray-800 select-none">Quick Start</summary>
         <div class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <p class="mb-2">Create tasks with summaries describing what to do, then let Claude work through them:</p>
-          <code class="block bg-gray-800 text-green-400 p-2 rounded text-xs font-mono">claude --permission-mode dontAsk "Start the next track/task"</code>
+          <p class="mb-2">Create tasks with summaries describing what to do, then let the agent work through them:</p>
+          <code class="block bg-gray-800 text-green-400 p-2 rounded text-xs font-mono">claude --dangerously-skip-permissions "Start the next track/task, commit the result and then continue on to the next until all are done"</code>
+          <code class="block bg-gray-800 text-green-400 p-2 rounded text-xs font-mono">claude "Fetch task NCxRSqUW and then switch to plan mode and help me plan it"</code>
         </div>
       </details>
     </header>
