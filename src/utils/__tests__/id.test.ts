@@ -8,10 +8,10 @@ describe('id utilities', () => {
       expect(id).toHaveLength(8);
     });
 
-    it('should generate URL-safe characters only', () => {
+    it('should generate alphanumeric characters only (no - or _)', () => {
       const id = generateId();
-      // nanoid alphabet: A-Za-z0-9_-
-      expect(id).toMatch(/^[A-Za-z0-9_-]+$/);
+      // Custom alphabet: A-Za-z0-9 (no _ or - for easier copy/paste)
+      expect(id).toMatch(/^[A-Za-z0-9]+$/);
     });
 
     it('should generate unique IDs', () => {
