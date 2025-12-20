@@ -172,7 +172,13 @@ onUnmounted(() => {
   <div class="max-w-6xl mx-auto p-6">
     <header class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900">{{ projectName }}</h1>
-      <p class="text-gray-600 mt-1">Project tracking dashboard</p>
+      <details class="mt-2 text-sm text-gray-600">
+        <summary class="cursor-pointer hover:text-gray-800 select-none">Quick Start</summary>
+        <div class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <p class="mb-2">Create tasks with summaries describing what to do, then let Claude work through them:</p>
+          <code class="block bg-gray-800 text-green-400 p-2 rounded text-xs font-mono">claude --permission-mode dontAsk "Start the next track/task"</code>
+        </div>
+      </details>
     </header>
 
     <!-- Error display -->
