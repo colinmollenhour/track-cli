@@ -9,6 +9,7 @@ const props = defineProps<{
   statusFilters: Set<Status>;
   expandedIds: Set<string>;
   worktreeFilter: string | null;
+  animatedIds: Map<string, string>;
 }>();
 
 const emit = defineEmits<{
@@ -99,6 +100,10 @@ function toggleExpand(trackId: string) {
 
 function isExpanded(trackId: string): boolean {
   return props.expandedIds.has(trackId);
+}
+
+function getAnimationClass(trackId: string): string {
+  return props.animatedIds.get(trackId) ?? '';
 }
 
 // Expand all
@@ -226,6 +231,7 @@ function collapseAll() {
                 :track="track"
                 :all-tracks="tracks"
                 :indent="0"
+                :animation-class="getAnimationClass(track.id)"
                 @edit="emit('edit', $event)"
                 @add-child="emit('addChild', $event)"
               />
@@ -257,6 +263,7 @@ function collapseAll() {
                     :track="child"
                     :all-tracks="tracks"
                     :indent="1"
+                    :animation-class="getAnimationClass(child.id)"
                     @edit="emit('edit', $event)"
                     @add-child="emit('addChild', $event)"
                   />
@@ -272,6 +279,7 @@ function collapseAll() {
                       :track="grandchild"
                       :all-tracks="tracks"
                       :indent="2"
+                      :animation-class="getAnimationClass(grandchild.id)"
                       @edit="emit('edit', $event)"
                       @add-child="emit('addChild', $event)"
                     />

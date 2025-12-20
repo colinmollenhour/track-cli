@@ -1,3 +1,57 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Track card animations */
+
+/* Flash animation for updated cards */
+@keyframes card-flash {
+  0% {
+    background-color: rgb(254 243 199); /* amber-100 */
+    box-shadow: 0 0 0 2px rgb(251 191 36); /* amber-400 */
+  }
+  100% {
+    background-color: white;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  }
+}
+
+.track-card-flash {
+  animation: card-flash 1.5s ease-out;
+}
+
+/* Fade in animation for new cards */
+@keyframes card-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.track-card-new {
+  animation: card-fade-in 0.4s ease-out;
+}
+
+/* Vue transition group for list items */
+.track-list-move {
+  transition: transform 0.3s ease;
+}
+
+.track-list-enter-active {
+  animation: card-fade-in 0.4s ease-out;
+}
+
+.track-list-leave-active {
+  transition: all 0.3s ease;
+  position: absolute;
+  width: 100%;
+}
+
+.track-list-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}

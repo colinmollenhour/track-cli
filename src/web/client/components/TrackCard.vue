@@ -16,6 +16,7 @@ const props = defineProps<{
   track: TrackWithDetails;
   allTracks: TrackWithDetails[];
   indent?: number;
+  animationClass?: string;
 }>();
 
 const emit = defineEmits<{
@@ -55,7 +56,7 @@ async function copyToClipboard(text: string, type: 'id' | 'title') {
 </script>
 
 <template>
-  <div :class="['bg-white rounded-lg shadow p-4', indent && indent > 0 ? 'ml-6 border-l-2 border-gray-200' : '']">
+  <div :class="['bg-white rounded-lg shadow p-4', indent && indent > 0 ? 'ml-6 border-l-2 border-gray-200' : '', animationClass]">
     <div class="flex items-start justify-between">
       <div class="flex-1 min-w-0">
         <!-- Header row -->

@@ -10,6 +10,12 @@ const AUTO_REFRESH_INTERVAL_MS = 5000; // 5 seconds
 
 const tracks = ref<TrackWithDetails[]>([]);
 
+// Track animation state - maps track ID to animation class
+const animatedIds = ref<Map<string, string>>(new Map());
+
+// Store previous track state for comparison (id -> updated_at)
+const previousTrackState = ref<Map<string, string>>(new Map());
+
 // Root track is the one with parent_id === null (project name from track init)
 const rootTrack = computed(() => tracks.value.find((t) => t.parent_id === null));
 const projectName = computed(() => rootTrack.value?.title ?? 'Track Status');
@@ -46,6 +52,41 @@ async function loadTracks() {
     loading.value = true;
     error.value = null;
     const response = await fetchStatus();
+
+    // Detect new and updated tracks for animation
+    const newAnimatedIds = new Map<string, string>();
+    const isInitialLoad = previousTrackState.value.size === 0;
+
+    if (!isInitialLoad) {
+      for (const track of response.tracks) {
+        const prevUpdatedAt = previousTrackState.value.get(track.id);
+        if (prevUpdatedAt === undefined) {
+          // New track
+          newAnimatedIds.set(track.id, 'track-card-new');
+        } else if (prevUpdatedAt !== track.updated_at) {
+          // Updated track
+          newAnimatedIds.set(track.id, 'track-card-flash');
+        }
+      }
+    }
+
+    // Update animation state
+    animatedIds.value = newAnimatedIds;
+
+    // Clear animations after they complete
+    if (newAnimatedIds.size > 0) {
+      setTimeout(() => {
+        animatedIds.value = new Map();
+      }, 1500);
+    }
+
+    // Store current state for next comparison
+    const newState = new Map<string, string>();
+    for (const track of response.tracks) {
+      newState.set(track.id, track.updated_at);
+    }
+    previousTrackState.value = newState;
+
     tracks.value = response.tracks;
 
     // Auto-expand the first active super track on initial load
@@ -223,6 +264,7 @@ onUnmounted(() => {
       :status-filters="statusFilters"
       :expanded-ids="expandedIds"
       :worktree-filter="worktreeFilter"
+      :animated-ids="animatedIds"
       @edit="openEditForm"
       @add-child="openCreateForm"
       @update:status-filters="statusFilters = $event"
