@@ -59,4 +59,9 @@ npm run build                    # Compile TypeScript → dist/
 node ./dist/index.js <command>   # Run the CLI
 ```
 
-**Always build before testing CLI changes!**
+## Post-development/Pre-commit Instructions
+
+- Make sure code is formatted and builds and tests pass.
+- Update the README.md and the .claude/skills and .claude/agents as appropriate of the CLI has changed.
+
+**Always build before testing CLI changes! We do not have hot-reload!**
