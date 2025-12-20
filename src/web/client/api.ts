@@ -1,5 +1,11 @@
 export type Status = 'planned' | 'in_progress' | 'done' | 'blocked' | 'superseded' | 'on_hold';
 export type Kind = 'super' | 'feature' | 'task';
+export type GitHostType = 'github' | 'gitlab' | 'bitbucket';
+
+export interface GitHost {
+  type: GitHostType;
+  url: string;
+}
 
 export interface Track {
   id: string;
@@ -24,6 +30,8 @@ export interface TrackWithDetails extends Track {
 
 export interface StatusResponse {
   tracks: TrackWithDetails[];
+  projectPath: string;
+  gitHost: GitHost | null;
 }
 
 export interface CreateTrackParams {
@@ -105,4 +113,11 @@ export async function removeDependency(blockedId: string, blockingId: string): P
     method: 'DELETE',
   });
   await handleResponse<{ success: boolean }>(response);
+}
+
+export async function stopServer(): Promise<void> {
+  await fetch(`${API_BASE}/stop`, {
+    method: 'POST',
+  });
+  // Server will stop, so we don't need to handle the response
 }
