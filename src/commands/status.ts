@@ -191,31 +191,38 @@ function getStatusEmoji(status: string): string {
  * @param startFromId - Optional track ID to start the tree from (instead of root)
  */
 function outputMarkdown(tracks: TrackWithDetails[], startFromId?: string): void {
-  // Find the starting track
-  const startTrack = startFromId
-    ? tracks.find((t) => t.id === startFromId)
-    : tracks.find((t) => t.parent_id === null);
-
-  if (!startTrack) {
-    console.log('No tracks found.');
-    return;
-  }
-
   // Build a map for quick child lookup
   const trackMap = new Map<string, TrackWithDetails>();
   for (const track of tracks) {
     trackMap.set(track.id, track);
   }
 
-  // Print header
+  // Find starting tracks (single track if ID specified, all roots otherwise)
+  let startTracks: TrackWithDetails[];
   if (startFromId) {
-    console.log(`# Track: ${startTrack.title}\n`);
+    const startTrack = tracks.find((t) => t.id === startFromId);
+    if (!startTrack) {
+      console.log('No tracks found.');
+      return;
+    }
+    startTracks = [startTrack];
   } else {
-    console.log(`# ${startTrack.title}\n`);
+    // Find all root tracks (parent_id === null)
+    startTracks = tracks.filter((t) => t.parent_id === null);
+    if (startTracks.length === 0) {
+      console.log('No tracks found.');
+      return;
+    }
   }
 
-  // Print tree starting from start track
-  printTrackMarkdown(startTrack, trackMap, 0);
+  // Print tree for each starting track
+  for (let i = 0; i < startTracks.length; i++) {
+    const startTrack = startTracks[i]!;
+    if (i > 0) {
+      console.log(); // Blank line between trees
+    }
+    printTrackMarkdown(startTrack, trackMap, 1); // Start at depth 1 (H1)
+  }
 }
 
 /**
@@ -223,46 +230,47 @@ function outputMarkdown(tracks: TrackWithDetails[], startFromId?: string): void 
  *
  * @param track - Track to print
  * @param trackMap - Map of all tracks for child lookup
- * @param depth - Current depth for indentation
+ * @param headingLevel - Markdown heading level (1 = H1, 2 = H2, 3 = H3, etc.)
  */
 function printTrackMarkdown(
   track: TrackWithDetails,
   trackMap: Map<string, TrackWithDetails>,
-  depth: number
+  headingLevel: number
 ): void {
-  const indent = '  '.repeat(depth);
   const emoji = getStatusEmoji(track.status);
-  const worktreeSuffix = track.worktree ? ` \`@${track.worktree}\`` : '';
+  const worktreeSuffix = track.worktree ? ` @${track.worktree}` : '';
 
-  // Track header line
-  console.log(`${indent}- ${emoji} **${track.title}** \`${track.id}\`${worktreeSuffix}`);
+  // Use markdown headers (cap at H6 for deep nesting)
+  const hashes = '#'.repeat(Math.min(headingLevel, 6));
+  console.log(`${hashes} ${emoji} ${track.title} \`${track.id}\`${worktreeSuffix}\n`);
 
-  // Details as sub-items
+  // Details as plain text
   if (track.summary) {
-    console.log(`${indent}  - ${track.summary}`);
+    console.log(track.summary);
   }
   if (track.next_prompt) {
-    console.log(`${indent}  - *Next:* ${track.next_prompt}`);
+    console.log(`*Next:* ${track.next_prompt}`);
   }
   if (track.files.length > 0) {
-    console.log(`${indent}  - *Files:* ${track.files.map((f) => `\`${f}\``).join(', ')}`);
+    console.log(`*Files:* ${track.files.map((f) => `\`${f}\``).join(', ')}`);
   }
   if (track.blocks.length > 0) {
-    console.log(`${indent}  - *Blocks:* ${track.blocks.map((id) => `\`${id}\``).join(', ')}`);
+    console.log(`*Blocks:* ${track.blocks.map((id) => `\`${id}\``).join(', ')}`);
   }
   if (track.blocked_by.length > 0) {
-    console.log(
-      `${indent}  - *Blocked by:* ${track.blocked_by.map((id) => `\`${id}\``).join(', ')}`
-    );
+    console.log(`*Blocked by:* ${track.blocked_by.map((id) => `\`${id}\``).join(', ')}`);
   }
 
   // Print children
   const children = track.children.filter(Boolean);
+  if (children.length > 0) {
+    console.log(); // Blank line before children
+  }
   for (const childId of children) {
     if (!childId) continue;
     const child = trackMap.get(childId);
     if (!child) continue;
-    printTrackMarkdown(child, trackMap, depth + 1);
+    printTrackMarkdown(child, trackMap, headingLevel + 1);
   }
 }
 
@@ -273,16 +281,6 @@ function printTrackMarkdown(
  * @param startFromId - Optional track ID to start the tree from (instead of root)
  */
 function outputHuman(tracks: TrackWithDetails[], startFromId?: string): void {
-  // Find the starting track
-  const startTrack = startFromId
-    ? tracks.find((t) => t.id === startFromId)
-    : tracks.find((t) => t.parent_id === null);
-
-  if (!startTrack) {
-    console.log('No tracks found.');
-    return;
-  }
-
   // Build a map for quick child lookup
   const trackMap = new Map<string, TrackWithDetails>();
   for (const track of tracks) {
@@ -292,16 +290,36 @@ function outputHuman(tracks: TrackWithDetails[], startFromId?: string): void {
   // Get terminal width once for the entire output
   const terminalWidth = getTerminalWidth();
 
-  // Print header
+  // Find starting tracks (single track if ID specified, all roots otherwise)
+  let startTracks: TrackWithDetails[];
   if (startFromId) {
+    const startTrack = tracks.find((t) => t.id === startFromId);
+    if (!startTrack) {
+      console.log('No tracks found.');
+      return;
+    }
+    startTracks = [startTrack];
     console.log(`Track: ${startTrack.title} (${startTrack.id})`);
   } else {
-    console.log(`Project: ${startTrack.title} (${startTrack.id})`);
+    // Find all root tracks (parent_id === null)
+    startTracks = tracks.filter((t) => t.parent_id === null);
+    if (startTracks.length === 0) {
+      console.log('No tracks found.');
+      return;
+    }
+    // Print header for first/main project
+    console.log(`Project: ${startTracks[0]!.title} (${startTracks[0]!.id})`);
   }
   console.log();
 
-  // Print tree starting from start track
-  printTrack(startTrack, trackMap, [], true, terminalWidth);
+  // Print tree for each starting track
+  for (let i = 0; i < startTracks.length; i++) {
+    const startTrack = startTracks[i]!;
+    if (i > 0) {
+      console.log(); // Blank line between trees
+    }
+    printTrack(startTrack, trackMap, [], i === startTracks.length - 1, terminalWidth);
+  }
 }
 
 /**
