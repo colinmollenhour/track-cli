@@ -5,6 +5,7 @@ import { buildTrackTree } from '../models/tree.js';
 import { ACTIVE_STATUSES } from '../models/types.js';
 import type { TrackWithDetails } from '../models/types.js';
 import { TREE, colorKind, colorStatus, formatLabel, getTerminalWidth } from '../utils/format.js';
+import { resolveTrackIdOrExit } from '../utils/resolve.js';
 
 /**
  * Options for the status command.
@@ -20,11 +21,14 @@ export interface StatusCommandOptions {
 /**
  * Display the current state of the project and all tracks.
  *
- * @param trackId - Optional track ID to show status for (with descendants)
+ * @param trackIdOrTitle - Optional track ID or title to show status for (with descendants)
  * @param options - Command options (json flag)
  * @throws Error if project doesn't exist or database query fails
  */
-export function statusCommand(trackId: string | undefined, options: StatusCommandOptions): void {
+export function statusCommand(
+  trackIdOrTitle: string | undefined,
+  options: StatusCommandOptions
+): void {
   // 1. Validate project exists
   if (!projectExists()) {
     console.error('Error: No track project found in this directory.');
@@ -61,13 +65,10 @@ export function statusCommand(trackId: string | undefined, options: StatusComman
       return;
     }
 
-    // 3. If a specific track ID is provided, show that track and its descendants
-    if (trackId) {
-      // Validate track exists
-      if (!lib.trackExists(dbPath, trackId)) {
-        console.error(`Error: Unknown track id: ${trackId}`);
-        process.exit(1);
-      }
+    // 3. If a specific track is provided, resolve and show that track and its descendants
+    if (trackIdOrTitle) {
+      // Resolve track ID (supports ID or title)
+      const trackId = resolveTrackIdOrExit(dbPath, trackIdOrTitle);
 
       // Get the specified track and all its descendants (unarchived only)
       const allTracks = options.all

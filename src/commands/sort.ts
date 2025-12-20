@@ -1,15 +1,20 @@
 import { projectExists, getDatabasePath } from '../utils/paths.js';
 import * as lib from '../lib/db.js';
+import { resolveTrackIdOrExit } from '../utils/resolve.js';
 
 /**
  * Move a track before or after another track.
  *
- * @param trackId - Track ID to move
+ * @param trackIdOrTitle - Track ID or title to move
  * @param position - 'before' or 'after'
- * @param targetId - Target track ID
+ * @param targetIdOrTitle - Target track ID or title
  * @throws Error if project doesn't exist, tracks not found, or operation fails
  */
-export function sortCommand(trackId: string, position: string, targetId: string): void {
+export function sortCommand(
+  trackIdOrTitle: string,
+  position: string,
+  targetIdOrTitle: string
+): void {
   // 1. Validate project exists
   if (!projectExists()) {
     console.error('Error: No track project found in this directory.');
@@ -27,20 +32,15 @@ export function sortCommand(trackId: string, position: string, targetId: string)
   try {
     const dbPath = getDatabasePath();
 
-    // 3. Check if tracks exist
-    const track = lib.getTrack(dbPath, trackId);
-    if (!track) {
-      console.error(`Error: Unknown track id: ${trackId}`);
-      process.exit(1);
-    }
+    // 3. Resolve track IDs (supports ID or title)
+    const trackId = resolveTrackIdOrExit(dbPath, trackIdOrTitle);
+    const targetId = resolveTrackIdOrExit(dbPath, targetIdOrTitle, 'target track');
 
-    const target = lib.getTrack(dbPath, targetId);
-    if (!target) {
-      console.error(`Error: Unknown target track id: ${targetId}`);
-      process.exit(1);
-    }
+    // 4. Get track details
+    const track = lib.getTrack(dbPath, trackId)!;
+    const target = lib.getTrack(dbPath, targetId)!;
 
-    // 4. Check they have the same parent
+    // 5. Check they have the same parent
     if (track.parent_id !== target.parent_id) {
       console.error('Error: Tracks must have the same parent.');
       console.error(`Track "${track.title}" parent: ${track.parent_id ?? '(root)'}`);
@@ -48,10 +48,10 @@ export function sortCommand(trackId: string, position: string, targetId: string)
       process.exit(1);
     }
 
-    // 5. Move the track
+    // 6. Move the track
     lib.moveTrack(dbPath, trackId, targetId, position);
 
-    // 6. Success message
+    // 7. Success message
     console.log(`Moved "${track.title}" ${position} "${target.title}"`);
   } catch (error) {
     console.error('Error: Failed to move track.');

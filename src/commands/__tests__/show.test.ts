@@ -437,7 +437,7 @@ describe('show command', () => {
         expect(exitMock.getExitCode()).toBe(1);
 
         const errors = consoleMock.getErrors();
-        expect(errors.some((err) => err.includes('Unknown track id: invalid123'))).toBe(true);
+        expect(errors.some((err) => err.includes('Unknown track: invalid123'))).toBe(true);
       });
     });
   });

@@ -356,7 +356,7 @@ describe('update command', () => {
         expect(exitMock.getExitCode()).toBe(1);
 
         const errors = consoleMock.getErrors();
-        expect(errors.some((err) => err.includes('Unknown track id: nonexistent'))).toBe(true);
+        expect(errors.some((err) => err.includes('Unknown track: nonexistent'))).toBe(true);
       });
     });
 

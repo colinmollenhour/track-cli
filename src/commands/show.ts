@@ -3,6 +3,7 @@ import * as lib from '../lib/db.js';
 import { buildTrackTree } from '../models/tree.js';
 import type { TrackWithDetails } from '../models/types.js';
 import { colorKind, colorStatus, formatLabel, getTerminalWidth } from '../utils/format.js';
+import { resolveTrackIdOrExit } from '../utils/resolve.js';
 
 /**
  * Options for the show command.
@@ -14,11 +15,11 @@ export interface ShowCommandOptions {
 /**
  * Display details for a specific track.
  *
- * @param trackId - The track ID to display
+ * @param trackIdOrTitle - The track ID or title to display
  * @param options - Command options (json flag)
  * @throws Error if project doesn't exist, track not found, or database query fails
  */
-export function showCommand(trackId: string, options: ShowCommandOptions): void {
+export function showCommand(trackIdOrTitle: string, options: ShowCommandOptions): void {
   // 1. Validate project exists
   if (!projectExists()) {
     console.error('Error: No track project found in this directory.');
@@ -29,19 +30,22 @@ export function showCommand(trackId: string, options: ShowCommandOptions): void 
   try {
     const dbPath = getDatabasePath();
 
-    // 2. Load all tracks from database
+    // 2. Resolve track ID (supports ID or title)
+    const trackId = resolveTrackIdOrExit(dbPath, trackIdOrTitle);
+
+    // 3. Load all tracks from database
     const tracks = lib.getAllTracks(dbPath);
 
-    // 3. Load all track-file associations
+    // 4. Load all track-file associations
     const fileMap = lib.getAllTrackFiles(dbPath);
 
-    // 4. Load all dependencies
+    // 5. Load all dependencies
     const dependencyMap = lib.getAllDependencies(dbPath);
 
-    // 5. Build tree structure with derived fields
+    // 6. Build tree structure with derived fields
     const tracksWithDetails = buildTrackTree(tracks, fileMap, dependencyMap);
 
-    // 6. Find the requested track
+    // 7. Find the requested track
     const track = tracksWithDetails.find((t) => t.id === trackId);
 
     if (!track) {
@@ -49,7 +53,7 @@ export function showCommand(trackId: string, options: ShowCommandOptions): void 
       process.exit(1);
     }
 
-    // 7. Output in requested format
+    // 8. Output in requested format
     if (options.json) {
       outputJson(track);
     } else {

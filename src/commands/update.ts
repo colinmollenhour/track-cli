@@ -3,6 +3,7 @@ import { getCurrentTimestamp } from '../utils/timestamp.js';
 import * as lib from '../lib/db.js';
 import { isValidStatus, VALID_STATUSES } from '../models/types.js';
 import type { UpdateTrackParams, Status } from '../models/types.js';
+import { resolveTrackIdOrExit } from '../utils/resolve.js';
 
 /**
  * Options for the update command.
@@ -21,11 +22,11 @@ export interface UpdateCommandOptions {
 /**
  * Update an existing track's state (summary, next_prompt, status, files).
  *
- * @param trackId - Track ID to update
+ * @param trackIdOrTitle - Track ID or title to update
  * @param options - Command options (summary, next_prompt, status, files)
  * @throws Error if validation fails or track update fails
  */
-export function updateCommand(trackId: string, options: UpdateCommandOptions): void {
+export function updateCommand(trackIdOrTitle: string, options: UpdateCommandOptions): void {
   // 1. Validate project exists
   if (!projectExists()) {
     console.error('Error: No track project found in this directory.');
@@ -35,12 +36,8 @@ export function updateCommand(trackId: string, options: UpdateCommandOptions): v
 
   const dbPath = getDatabasePath();
 
-  // 2. Validate track exists
-  if (!lib.trackExists(dbPath, trackId)) {
-    console.error(`Error: Unknown track id: ${trackId}`);
-    console.error('The specified track does not exist.');
-    process.exit(1);
-  }
+  // 2. Resolve track ID (supports ID or title)
+  const trackId = resolveTrackIdOrExit(dbPath, trackIdOrTitle);
 
   // 3. Validate and normalize status
   const status: Status = options.status

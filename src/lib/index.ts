@@ -371,6 +371,17 @@ export class TrackManager {
     const dependencyMap = db.getAllDependencies(this.dbPath);
     return buildTrackTree(tracks, fileMap, dependencyMap);
   }
+
+  /**
+   * Resolve a track identifier (ID or title) to a track ID.
+   * First tries exact ID match, then falls back to case-insensitive title search.
+   *
+   * @param input - Track ID or title to resolve
+   * @returns ResolveResult indicating success with trackId, or failure with error details
+   */
+  resolveTrackId(input: string): db.ResolveResult {
+    return db.resolveTrackId(this.dbPath, input);
+  }
 }
 
 // Re-export database functions for advanced use cases
@@ -398,4 +409,8 @@ export {
   getUnarchivedTracks,
   getUnarchivedTracksByStatus,
   getUnarchivedTracksByStatusAndWorktree,
+  resolveTrackId,
 } from './db.js';
+
+// Re-export types
+export type { ResolveResult } from './db.js';

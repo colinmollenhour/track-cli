@@ -932,3 +932,47 @@ export function updateSortOrder(dbPath: string, trackId: string, sortOrder: numb
     db.prepare('UPDATE tracks SET sort_order = ? WHERE id = ?').run(sortOrder, trackId);
   });
 }
+
+// ============================================================================
+// Track Resolution (ID or Title)
+// ============================================================================
+
+export type ResolveResult =
+  | { success: true; trackId: string }
+  | { success: false; error: 'not_found'; input: string }
+  | { success: false; error: 'ambiguous'; input: string; matches: Track[] };
+
+/**
+ * Resolve a track identifier (ID or title) to a track ID.
+ * First tries exact ID match, then falls back to case-insensitive title search.
+ *
+ * @param dbPath - Path to the database file
+ * @param input - Track ID or title to resolve
+ * @returns ResolveResult indicating success with trackId, or failure with error details
+ */
+export function resolveTrackId(dbPath: string, input: string): ResolveResult {
+  return withDatabase(dbPath, (db) => {
+    // First, try exact ID match
+    const idMatch = db.prepare('SELECT id FROM tracks WHERE id = ?').get(input) as
+      | { id: string }
+      | undefined;
+    if (idMatch) {
+      return { success: true, trackId: idMatch.id };
+    }
+
+    // Fall back to case-insensitive title search
+    const titleMatches = db
+      .prepare('SELECT * FROM tracks WHERE LOWER(title) = LOWER(?)')
+      .all(input) as Track[];
+
+    if (titleMatches.length === 1) {
+      return { success: true, trackId: titleMatches[0]!.id };
+    }
+
+    if (titleMatches.length > 1) {
+      return { success: false, error: 'ambiguous', input, matches: titleMatches };
+    }
+
+    return { success: false, error: 'not_found', input };
+  });
+}
